@@ -219,13 +219,19 @@ class BubbleKern( object ):
 			if not "lastIndex" in globals(): # only the case with first access
 				lastIndex = 8
 			if index == 1: # New Set
+				lastIndex = 1
 				self.w.tabs[0].permList.set(emptyList)
 				self.refreshSectionPreview(0)
 				self.w.tabs[0].options.set(0)
 			elif index == 2: # Save Set in Favourites
-				lastName = favNameList[lastIndex-8]
-				self.SavePreferences(lastName, False) # deleteBool = False
-				self.w.tabs[0].options.set(lastIndex)
+				if lastIndex == 1:
+					setName = AskString("Save As:", title="Save Pair List")
+				else:
+					setName = favNameList[lastIndex-8]
+				self.SavePreferences(setName, False) # deleteBool = False
+				self.refreshOptions()
+				favNameList = self.favNameList()
+				self.w.tabs[0].options.set(favNameList.index(setName)+8)
 			elif index == 3: # Save Set in Favourites As...
 				newName = AskString("Save As:", title="Save Pair List")
 				if newName == "": #exists already or empty, or None:
