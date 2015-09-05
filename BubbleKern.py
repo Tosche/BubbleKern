@@ -232,6 +232,7 @@ class BubbleKern( object ):
 				self.refreshOptions()
 				favNameList = self.favNameList()
 				self.w.tabs[0].options.set(favNameList.index(setName)+8)
+				lastIndex = favNameList.index(setName)+8
 			elif index == 3: # Save Set in Favourites As...
 				newName = AskString("Save As:", title="Save Pair List")
 				if newName == "": #exists already or empty, or None:
