@@ -22,10 +22,10 @@ A good tool is something the user can control. BubbleKern will kern a font for y
 * **BubbleKern Manual.pdf** Instruction on how to use BubbleKern with more detail than this README.
 
 ### Installation
-1. Download the complete ZIP file and unpack it, or clone the repository.
-2. Double click the .glyphsReporter file. Confirm the dialog that appears in Glyphs.
-3. Put the .py files under Scripts folder. The easiest way to access the folder is to open Scripts menu in Glyphs and choose "Open Scripts Folder".
-3. Restart Glyphs
+1. Install three scripts in ~/Library/Application Support/Glyphs/Scripts folder. Make Bubble Layers and BubbleKern require vanilla and robofab modules to display user interface. You can install them easily from Glyphs (Preferences > Addons > Modules). If you needed to install modules, you will need to restart Glyphs. Installed scripts will appear under Scripts menu.
+2. The Show Kern Bubbles viewer plugin needs to be installed in ~/Library/Application Support/Glyphs/Plugins folder (if there is none, create one). After installation, you need to restart Glyphs. It will show up under View menu as Show Kern Bubbles. Alternatively you can double click the plugin file to install it; confirm Confirm the dialog that appears in Glyphs.
+3. If the script gives me an error, you may have glyphsapp.py or .pyc in your Scripts folder. In that case, delete them and try running the script again. Restarting Glyphs may be necessary.
+4. Restart Glyphs
 
 ### Usage Instructions
 The essential part is that you have a layer called "bubble" and run *BubbleKern* script. Every other tool is basically optional.
