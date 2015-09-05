@@ -211,7 +211,7 @@ class MakeBubbleLayers( object ):
 				offsetH = int(self.w.editH.get())
 				offsetV = int(self.w.editV.get())
 			except:
-				Glyphs.displayDialog("You typed something other than numbers in the text field! You maniac!")
+				Glyphs.displayDialog_withTitle_("You typed something other than numbers in the text field.", "Invalid Input")
 
 			if self.w.masterRadio.get() == 0:
 				masters = [font.selectedFontMaster]
