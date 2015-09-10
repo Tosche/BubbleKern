@@ -2,6 +2,8 @@
 
 BubbleKern is a set of new kerning tools for the [Glyphs font editor](http://glyphsapp.com/) by Georg Seifert. that is based on the shape of surrounding outlines you draw, which is called a bubble. Once you draw bubbles for all letters, BubbleKern automatically kerns the typeface in seconds. That’s right, you kern by drawing it!
 
+Tutorial: <http://youtu.be/TA2RZQivvS0>
+
 A bubble needs to be made as a extra layer in each master, and it has to be named “bubble“. It doesn’t have to be straight segments or single path, and you craw however you want. Components automatically inherit the bubbles of base glyphs, so you don’t have to draw one for an accented glyph (for letters like Eth or Tbar, you just draw a bubble for the bar).
 
 When asked to kern, first of all BubbleKern scans through each letter to make an approximation of bubble shape so that it’s faster to calculate. And the temporary dictionary of bubble sidebearings is built for every letter.
