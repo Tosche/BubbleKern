@@ -136,7 +136,7 @@ class MakeBubbleLayers( object ):
 				for i in range(numOfNodes):
 					node = thisPath.nodes[i]
 					interesting = False
-					if node.type == 1 or node.type == 35:
+					if node.type != GSOFFCURVE:
 						if node.x < 0 and nudgeExcess:
 							interesting = True
 							offsetX = -node.x
@@ -151,16 +151,16 @@ class MakeBubbleLayers( object ):
 							offsetX = givenLayer.width - node.x
 						if interesting:
 							nodeBefore = thisPath.nodes[i-1]
-							if nodeBefore.type == 65:
-								if thisPath.nodes[i-2].type == 65: # if two previous nodes are 65 (offcurve)
+							if nodeBefore.type == GSOFFCURVE:
+								if thisPath.nodes[i-2].type == GSOFFCURVE: # if two previous nodes are offcurve
 									oncurveMv = node
 									offcurve1 = nodeBefore
 									offcurve2 = thisPath.nodes[i-2]
 									oncurveSt = thisPath.nodes[i-3]
 									self.nudgeCurve(oncurveMv, offcurve1, offcurve2, oncurveSt, offsetX) # only moves offcurve
 							nodeAfter = thisPath.nodes[i+1]
-							if nodeAfter.type == 65:
-								if thisPath.nodes[i+2].type ==65: # if two next nodes are 65 (offcurve)
+							if nodeAfter.type == GSOFFCURVE:
+								if thisPath.nodes[i+2].type == GSOFFCURVE: # if two next nodes are offcurve
 									oncurveMv = node
 									offcurve1 = nodeAfter
 									offcurve2 = thisPath.nodes[i+2]
@@ -193,7 +193,7 @@ class MakeBubbleLayers( object ):
 				PathOperator = GSPathOperator.alloc().init()
 				Paths = givenLayer.pyobjc_instanceMethods.paths()
 				PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
-				givenLayer.paths = Paths
+				#givenLayer.paths = Paths
 		except Exception, e:
 			Glyphs.showMacroWindow()
 			print "Make Bubble Layers Error (fitToSidebearing): %s" % e
