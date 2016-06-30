@@ -30,8 +30,9 @@ class ShowKernBubbles(ReporterPlugin):
 					if len(l.paths) > 0:
 						l.bezierPath.fill()
 		except Exception, e:
-			Glyphs.showMacroWindow()
-			print "Show Kern Bubbles Error (fillBubblePaths): %s" % e
+			pass
+#			Glyphs.showMacroWindow()
+#			print "Show Kern Bubbles Error (fillBubblePaths): %s" % e
 
 	def fillBubbleCompo(self, givenLayer): # give it the master layer
 		try:
@@ -47,8 +48,9 @@ class ShowKernBubbles(ReporterPlugin):
 							for pathCopy in copiedLayer.paths:
 								pathCopy.bezierPath.fill()
 		except Exception, e:
-			Glyphs.showMacroWindow()
-			print "Show Kern Bubbles Error (fillBubbleCompo): %s" % e
+			pass
+#			Glyphs.showMacroWindow()
+#			print "Show Kern Bubbles Error (fillBubbleCompo): %s" % e
 
 	def fillBlackCompo(self, givenLayer):
 		try:
@@ -62,8 +64,9 @@ class ShowKernBubbles(ReporterPlugin):
 						for pathCopy in copiedLayer.paths:
 							pathCopy.bezierPath.fill()
 		except Exception, e:
-			Glyphs.showMacroWindow()
-			print "Show Kern Bubbles Error (fillBlackCompo): %s" % e
+			pass
+#			Glyphs.showMacroWindow()
+#			print "Show Kern Bubbles Error (fillBlackCompo): %s" % e
 
 	def background(self, layer):
 		try:
@@ -71,11 +74,16 @@ class ShowKernBubbles(ReporterPlugin):
 			self.fillBubbleCompo(layer.parent.layers[layer.associatedFontMaster().name])
 			if layer.name == "bubble":
 				NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.0, 0.0, 0.0, 0.5 ).set()
-				for c in layer.parent.layers[layer.associatedFontMaster().name].components:
-					c.bezierPath.fill()
+				parentLayer = layer.parent.layers[layer.associatedFontMaster().name]
+				if parentLayer.bezierPath:
+					parentLayer.bezierPath.fill()
+				if parentLayer.components:
+					for c in layer.parent.layers[layer.associatedFontMaster().name].components:
+						c.bezierPath.fill()
 		except Exception, e:
-			Glyphs.showMacroWindow()
-			print "Show Kern Bubbles Error (background): %s" % e
+			pass
+#			Glyphs.showMacroWindow()
+#			print "Show Kern Bubbles Error (background): %s" % e
 
 	def inactiveLayers(self, layer):
 		try:
@@ -105,5 +113,6 @@ class ShowKernBubbles(ReporterPlugin):
 					for c in layer.components:
 						c.bezierPath.fill()
 		except Exception, e:
-			Glyphs.showMacroWindow()
-			print "Show Kern Bubbles Error (inactiveLayers): %s" % e
+			pass
+#			Glyphs.showMacroWindow()
+#			print "Show Kern Bubbles Error (inactiveLayers): %s" % e
