@@ -111,7 +111,10 @@ class BubbleKern( object ):
 		tab1.pairNum = vanilla.TextBox((10, -spY-txY, -10, txY), "", sizeStyle = "small")
 
 		self.w.allButton = vanilla.Button((-spX*2-btnX*2-60, -btnY-spY, btnX, btnY), "Kern All Pairs", sizeStyle='regular', callback=self.BubbleKernMain)
-		self.w.selButton = vanilla.Button((-spX-btnX-60, -btnY-spY, btnX+60, btnY), "Kern Pairs with Selected Glyphs", sizeStyle='regular', callback=self.BubbleKernMain )
+		self.w.selButton = vanilla.Button((-spX-btnX-60, -btnY-spY, btnX+60, btnY), "Kern Pairs for Selected Glyphs", sizeStyle='regular', callback=self.BubbleKernMain )
+
+		self.progress = vanilla.Window((200, 65), closable=False, miniaturizable=False)
+		self.progress.text = vanilla.TextBox( (spX, spY, -spX, txY), "Please wait..." )
 
 		# Load Settings:
 		if not self.LoadPreferences():
@@ -123,6 +126,10 @@ class BubbleKern( object ):
 		# Open window and focus on it:
 		self.w.open()
 		self.w.makeKey()
+		self.progress.open()
+		self.progress.center()
+		self.progress.hide()
+
 	def SavePreferences( self, saveName, deleteBool ):
 		try:
 			if deleteBool == False: # you need to save
@@ -189,7 +196,7 @@ class BubbleKern( object ):
 			if Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"] != None:
 				flatPairs = Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"]
 			else: # Fall Back to Default Text
-				flatPairs = "Welcome!\n\nBelow is a sample of flat pairs. Each line should be a pair, two glyph names separated by a space.\n\nA T\nT A\nT a\nT adieresis\n\nWhen you actually kern, there should be no junk lines such as this welcome text."
+				flatPairs = "Welcome!\n\nBelow is a sample of flat text pairs. Each line should be a pair, two glyph names separated by a space.\n\nA T\nT A\nT a\nT adieresis\n\nWhen you actually kern, there should be no junk lines such as this welcome text."
 			self.w.tabs[1].flatPairs.set(flatPairs)
 			return True
 
@@ -485,6 +492,7 @@ class BubbleKern( object ):
 
 	def BubbleKernMain( self, sender ):
 		try:
+			self.progress.show()
 			# Only the "Copy" funciton has been implemented
 			if self.w.tabs.get() == 0: # if source is pair list builder
 				pairList = []
@@ -584,6 +592,8 @@ class BubbleKern( object ):
 							font.setKerningForPair(theMaster.id, left, right, -roundup(kernValue))
 					else: # activates fail-safe by using maxKern if kernValue is too large or infinite
 						font.setKerningForPair(theMaster.id, left, right, -int(maxKern))
+			self.progress.close()
+
 		# When do you save flat text?
 
 		except Exception, e:

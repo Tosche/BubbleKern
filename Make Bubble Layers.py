@@ -47,6 +47,12 @@ class MakeBubbleLayers( object ):
 		# Run Button:
 		self.w.runButton = vanilla.Button((-80-15, -20-15, -15, -15), "Go!", sizeStyle='regular', callback=self.MakeBubbleLayersMain )
 		self.w.setDefaultButton( self.w.runButton )
+
+		self.progress = vanilla.Window((200, 65), closable=False, miniaturizable=False)
+#		self.progress.bar = vanilla.ProgressBar((10, 10, -10, 20), minValue=0, maxValue=100, sizeStyle="regular")
+#		self.progress.button = vanilla.Button((10, 35, -10, 20), "Cancel", callback=self.closeProgress)
+		self.progress.text = vanilla.TextBox( (spX, spY, -spX, txY), "Please wait..." )
+
 		# Load Settings:
 		if not self.LoadPreferences():
 			self.w.excessRadio.set(0)
@@ -56,6 +62,9 @@ class MakeBubbleLayers( object ):
 		# Open window and focus on it:
 		self.w.open()
 		self.w.makeKey()
+		self.progress.open()
+		self.progress.center()
+		self.progress.hide()
 
 	def SavePreferences( self, sender ):
 		try:
@@ -83,6 +92,11 @@ class MakeBubbleLayers( object ):
 			
 		return True
 
+	def closeProgress(self):
+		try:
+			self.progress.close()
+		except:
+			pass
 	def checkBoxCallback(self,sender):
 		try:
 			if sender.get():
@@ -200,13 +214,13 @@ class MakeBubbleLayers( object ):
 	
 	def MakeBubbleLayersMain( self, sender ):
 		try:
+			self.progress.show()
+			self.progress.makeKey()
 			font = Glyphs.font # frontmost font
 			fontMaster = font.selectedFontMaster # active master
 			selectedLayers = font.selectedLayers # active layers of selected glyphs
 			GLYPHSAPPVERSION = NSBundle.bundleForClass_(GSMenu).infoDictionary().objectForKey_("CFBundleShortVersionString")
-
 			font.disableUpdateInterface() # suppresses UI updates in Font View
-
 			try:
 				offsetH = int(self.w.editH.get())
 				offsetV = int(self.w.editV.get())
@@ -218,10 +232,11 @@ class MakeBubbleLayers( object ):
 			else:
 				masters = font.masters
 
+			layersCount = float(len(selectedLayers))
+			counter = 0.0
 			for gLayer in selectedLayers:
 				glyph = gLayer.parent
 				glyph.beginUndo() # begin undo grouping			
-
 				if self.w.overwriteRadio.get() == 0: # never overwrite
 					# bubbleList is a list of masters that have bubble layer
 					bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' ]
@@ -252,7 +267,11 @@ class MakeBubbleLayers( object ):
 						if self.w.adhereToSB.get():
 							self.fitToSidebearing(newBubbleLayer, master)
 						glyph.layers.append(newBubbleLayer)
-				glyph.endUndo()   # end undo grouping		
+				glyph.endUndo()   # end undo grouping
+				counter += 1.0
+				self.progress.text.set("Please wait...%s%%" % int((counter/layersCount)*100) )
+#				self.progress.bar.set((counter/layersCount)*100.0)
+			self.progress.close()
 			font.enableUpdateInterface() # re-enables UI updates in Font View
 	
 			if not self.SavePreferences( self ):

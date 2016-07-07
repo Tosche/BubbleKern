@@ -24,7 +24,8 @@ class ShowKernBubbles(ReporterPlugin):
 
 	def fillBubblePaths(self, givenLayer): # give it master layer
 		try:
-			NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
+			NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.5, 0.4, 1.0, 0.25 ).set()
+			#NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
 			for l in givenLayer.parent.layers:
 				if l.name == "bubble" and l.associatedFontMaster() == givenLayer.associatedFontMaster():
 					if len(l.paths) > 0:
@@ -36,7 +37,8 @@ class ShowKernBubbles(ReporterPlugin):
 
 	def fillBubbleCompo(self, givenLayer): # give it the master layer
 		try:
-			NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
+			NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.5, 0.4, 1.0, 0.25 ).set()
+			#NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
 			if len(givenLayer.components) > 0:
 				for thisCompo in givenLayer.components:
 					for thisLayer in thisCompo.component.layers:
@@ -90,7 +92,8 @@ class ShowKernBubbles(ReporterPlugin):
 			if layer.name == "bubble":
 				# fill bubble
 				if len(layer.paths) > 0:
-					NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
+					NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.5, 0.4, 1.0, 0.25 ).set()
+					#NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
 					layer.bezierPath.fill()
 				self.fillBubbleCompo(layer.parent.layers[layer.associatedFontMaster().name])
 				#fill letterform
