@@ -490,6 +490,11 @@ class BubbleKern( object ):
 		except Exception, e:
 			print "BubbleKern Error (refreshPairNum): %s" % e
 
+	#　function that rounds up the given number to nearest 10, used for applying minimal kernValue
+	# I use this because kern value may be negative.
+	def roundup(self, givenNumber):
+		return int(ceil(givenNumber / 10.0)) * 10
+
 	def BubbleKernMain( self, sender ):
 		try:
 			self.progress.show()
@@ -529,7 +534,6 @@ class BubbleKern( object ):
 
 			# List of unique glyph names made from pairList. May contain non-existent glyphs.
 			charSet = {letters for pair in pairList for letters in pair.split()}
-			
 			for glyphName in charSet:
 				if font.glyphs[glyphName]:
 					glyph = font.glyphs[glyphName]
@@ -555,7 +559,7 @@ class BubbleKern( object ):
 														finalBubbleLayer.addPath_(pathCopy)
 												except:
 													pass
-
+				
 					if 'finalBubbleLayer' in locals():
 						if len(finalBubbleLayer.paths) > 0:
 							bubbleDic[glyph.name] = {}
@@ -568,12 +572,7 @@ class BubbleKern( object ):
 								if len( intersections ) > 2:
 									bubbleDic[glyph.name]["LB"][y] = round(intersections[1].x)
 									bubbleDic[glyph.name]["RB"][y] = glyph.layers[theMaster.id].width - round(intersections[-2].x)
-
-			#　function that rounds up the given number to nearest 10, used for applying minimal kernValue
-			# I use this because kern value may be negative.
-			def roundup(givenNumber):
-				return int(ceil(givenNumber / 10.0)) * 10
-			
+			# Roundup function was here
 			for pair in pairList:
 				(left, right) = pair.split()
 				if font.glyphs[left] and font.glyphs[right] and (left in bubbleDic) and (right in bubbleDic): # only if both glyphs exist:
@@ -589,11 +588,10 @@ class BubbleKern( object ):
 						if abs(kernValue) >= 10: # kerned as is if larger than 10 units
 							font.setKerningForPair(theMaster.id, left, right, -kernValue)
 						elif 8 <= abs(kernValue) < 10: # kerned 10 units if it's between 7 and 10
-							font.setKerningForPair(theMaster.id, left, right, -roundup(kernValue))
+							font.setKerningForPair(theMaster.id, left, right, -self.roundup(kernValue))
 					else: # activates fail-safe by using maxKern if kernValue is too large or infinite
 						font.setKerningForPair(theMaster.id, left, right, -int(maxKern))
-			self.progress.close()
-
+			self.progress.hide()
 		# When do you save flat text?
 
 		except Exception, e:

@@ -207,7 +207,8 @@ class MakeBubbleLayers( object ):
 				PathOperator = GSPathOperator.alloc().init()
 				Paths = givenLayer.pyobjc_instanceMethods.paths()
 				PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
-				#givenLayer.paths = Paths
+				for p in Paths:
+					p.parent = givenLayer
 		except Exception, e:
 			Glyphs.showMacroWindow()
 			print "Make Bubble Layers Error (fitToSidebearing): %s" % e
@@ -231,47 +232,50 @@ class MakeBubbleLayers( object ):
 				masters = [font.selectedFontMaster]
 			else:
 				masters = font.masters
-
 			layersCount = float(len(selectedLayers))
 			counter = 0.0
 			for gLayer in selectedLayers:
-				glyph = gLayer.parent
-				glyph.beginUndo() # begin undo grouping			
-				if self.w.overwriteRadio.get() == 0: # never overwrite
-					# bubbleList is a list of masters that have bubble layer
-					bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' ]
-				elif self.w.overwriteRadio.get() == 1: # make new only if empty
-					bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' and len(layer.paths) > 0 ]
-					bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' and len(layer.paths)==0 ]
-				else: #Always delete and make new
-					bubbleList = []
-					bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' ]
-				if 'bubblesToBeDeleted' in locals():
-					for emptyBubble in bubblesToBeDeleted:
-						glyph.removeLayerForKey_(emptyBubble.layerId)
-
-				for master in masters:
-					if not master in bubbleList: # if master is not mentioned in bubbleList = doesn't have bubble
-						newBubbleLayer = GSLayer()
-						newBubbleLayer.name = "bubble"
-						newBubbleLayer.width = glyph.layers[master.id].width
-						newBubbleLayer.associatedMasterId = master.id
-						for pathToCopy in glyph.layers[master.id].paths:
-							newBubbleLayer.addPath_( pathToCopy.copy() )
-						self.offsetPath(newBubbleLayer, offsetH, offsetV) # SHOULD NOT BE EXECUTED IF SIDEBEARING OPTION IS OFF
-						newBubbleLayer.removeOverlap()
-						for path in newBubbleLayer.paths: # remove negative path because you don't need it
-							if path.direction == 1:
-								path.reverse()
-						newBubbleLayer.removeOverlap() # remove overlap again to eliminate all negative path
-						if self.w.adhereToSB.get():
-							self.fitToSidebearing(newBubbleLayer, master)
-						glyph.layers.append(newBubbleLayer)
-				glyph.endUndo()   # end undo grouping
-				counter += 1.0
-				self.progress.text.set("Please wait...%s%%" % int((counter/layersCount)*100) )
-#				self.progress.bar.set((counter/layersCount)*100.0)
-			self.progress.close()
+				if gLayer.name != None: # if it's not a line break
+					glyph = gLayer.parent
+					glyph.beginUndo() # begin undo grouping			
+					if self.w.overwriteRadio.get() == 0: # never overwrite
+						# bubbleList is a list of masters that have bubble layer
+						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' ]
+					elif self.w.overwriteRadio.get() == 1: # make new only if empty
+						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' and len(layer.paths) > 0 ]
+						bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' and len(layer.paths)==0 ]
+					else: #Always delete and make new
+						bubbleList = []
+						bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' ]
+					if 'bubblesToBeDeleted' in locals():
+						for emptyBubble in bubblesToBeDeleted:
+							glyph.removeLayerForKey_(emptyBubble.layerId)
+					for master in masters:
+						if not master in bubbleList: # if master is not mentioned in bubbleList = doesn't have bubble
+							newBubbleLayer = GSLayer()
+							newBubbleLayer.name = "bubble"
+							newBubbleLayer.width = glyph.layers[master.id].width
+							newBubbleLayer.associatedMasterId = master.id
+							for pathToCopy in glyph.layers[master.id].paths:
+								newBubbleLayer.paths.append( pathToCopy.copy() )
+							self.offsetPath(newBubbleLayer, offsetH, offsetV) # SHOULD NOT BE EXECUTED IF SIDEBEARING OPTION IS OFF
+							newBubbleLayer.removeOverlap()
+							for path in newBubbleLayer.paths: # remove negative path because you don't need it
+								if path.direction == 1:
+									path.reverse()
+							newBubbleLayer.removeOverlap() # remove overlap again to eliminate all negative path
+							if self.w.adhereToSB.get():
+								self.fitToSidebearing(newBubbleLayer, master)
+							glyph.layers.append(newBubbleLayer)
+							for p in newBubbleLayer.paths: # rounding all coordinates
+								for n in p.nodes:
+									n.x = int(round(n.x))
+									n.y = int(round(n.y))
+					glyph.endUndo()   # end undo grouping
+					counter += 1.0
+					self.progress.text.set("Please wait...%s%%" % int((counter/layersCount)*100) )
+	#				self.progress.bar.set((counter/layersCount)*100.0)
+			self.progress.hide()
 			font.enableUpdateInterface() # re-enables UI updates in Font View
 	
 			if not self.SavePreferences( self ):
