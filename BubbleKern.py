@@ -519,6 +519,7 @@ class BubbleKern( object ):
 				else:
 					Glyphs.displayDialog_("You need to clean up your text first!")	
 			font = Glyphs.font
+			font.disableUpdateInterface()
 			theMaster = font.selectedFontMaster
 			# Resolution of bubble. 1 unit is most accurate, unnecessarily accurate, and really slow.
 			# 20 sounds a bit rough, but the result is not bad in my opinion.
@@ -539,7 +540,7 @@ class BubbleKern( object ):
 					glyph = font.glyphs[glyphName]
 					finalBubbleLayer = GSLayer() # gather all bubble outline data in this ghost layer. Initialise at every glyph
 					for layer in glyph.layers:
-						if layer.name == "bubble" and layer.associatedFontMaster().name == theMaster.name: # if bubble layer exists in a glyph
+						if layer.name == "bubble" and layer.associatedFontMaster() == theMaster: # if bubble layer exists in a glyph
 							finalBubbleLayer.width = layer.width
 							for pathToCopy in layer.paths:
 								finalBubbleLayer.addPath_(pathToCopy.copy())
@@ -549,7 +550,7 @@ class BubbleKern( object ):
 							if numberOfComponents != 0: # if the master layer has components
 								for thisCompo in theComponents:
 									for thisLayer in thisCompo.component.layers:
-										if thisLayer.name == "bubble" and thisLayer.associatedFontMaster().name == theMaster.name: # if component has a bubble
+										if thisLayer.name == "bubble" and thisLayer.associatedFontMaster() == theMaster: # if component has a bubble
 												try:
 													copiedLayer = thisLayer.copy()
 													Transform = NSAffineTransform.transform()
@@ -592,8 +593,8 @@ class BubbleKern( object ):
 					else: # activates fail-safe by using maxKern if kernValue is too large or infinite
 						font.setKerningForPair(theMaster.id, left, right, -int(maxKern))
 			self.progress.hide()
+			font.enableUpdateInterface()
 		# When do you save flat text?
-
 		except Exception, e:
 			Glyphs.showMacroWindow()
 			print "BubbleKern Error (BubbleKernMain): %s" % e

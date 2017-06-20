@@ -19,7 +19,7 @@ class MakeBubbleLayers( object ):
 		btnX = 60
 		btnY = 20
 		windowWidth  = 260
-		windowHeight = 300
+		windowHeight = 360
 		windowWidthResize  = 100 # user can resize width by this value
 		windowHeightResize = 0   # user can resize height by this value
 		self.w = vanilla.FloatingWindow(
@@ -38,19 +38,21 @@ class MakeBubbleLayers( object ):
 		self.w.excess = vanilla.TextBox( (spX+16, spY*5+txY*3-7, -spX, txY), "Exceeding outlines are:" )
 		self.w.excessRadio = vanilla.RadioGroup((spX+16, spY*6+txY*4-14, 160, edY), ["Nudged", "Trimmed"], isVertical = False,)
 		self.w.line2 = vanilla.HorizontalLine((0, spY*6+txY*5-4, -0, 1))
+		# Rounding:
+		self.w.textRound = vanilla.TextBox( (spX, spY*7+txY*5, txX, txY), "Round Corners:" )
+		self.w.editRound = vanilla.EditText( (-spX-80, spY*7+txY*5, -spX, edY), "0")
+		self.w.line3 = vanilla.HorizontalLine((0, spY*8+txY*6+5, -0, 1))
 		# Overwrite Behaviour:
-		self.w.textOverwrite = vanilla.TextBox( (spX, spY*7+txY*5-8, -spX, txY), "Overwrite existing?" )
-		self.w.overwriteRadio = vanilla.RadioGroup((spX, spY*8+txY*6-11, -spX, edY), ["Never", "If Empty", "Always"], isVertical = False,)
-		self.w.line3 = vanilla.HorizontalLine((0, spY*9+txY*7-8, -0, 1))
+		self.w.textOverwrite = vanilla.TextBox( (spX, spY*9+txY*7-11, -spX, txY), "Overwrite existing?" )
+		self.w.overwriteRadio = vanilla.RadioGroup((spX, spY*10+txY*8-14, -spX, edY), ["Never", "If Empty", "Always"], isVertical = False,)
+		self.w.line4 = vanilla.HorizontalLine((0, spY*11+txY*9-8, -0, 1))
 		# Master preference
-		self.w.masterRadio = vanilla.RadioGroup((spX, spY*9+txY*7, 0, edY), ["Current Master", "All Masters"], isVertical = False,)
+		self.w.masterRadio = vanilla.RadioGroup((spX, spY*11+txY*9, 0, edY), ["Current Master", "All Masters"], isVertical = False,)
 		# Run Button:
 		self.w.runButton = vanilla.Button((-80-15, -20-15, -15, -15), "Go!", sizeStyle='regular', callback=self.MakeBubbleLayersMain )
 		self.w.setDefaultButton( self.w.runButton )
 
 		self.progress = vanilla.Window((200, 65), closable=False, miniaturizable=False)
-#		self.progress.bar = vanilla.ProgressBar((10, 10, -10, 20), minValue=0, maxValue=100, sizeStyle="regular")
-#		self.progress.button = vanilla.Button((10, 35, -10, 20), "Cancel", callback=self.closeProgress)
 		self.progress.text = vanilla.TextBox( (spX, spY, -spX, txY), "Please wait..." )
 
 		# Load Settings:
@@ -72,6 +74,7 @@ class MakeBubbleLayers( object ):
 			Glyphs.defaults["com.Tosche.MakeBubbleLayers.editV"] = self.w.editV.get()
 			Glyphs.defaults["com.Tosche.MakeBubbleLayers.adhereToSB"] = self.w.adhereToSB.get()
 			Glyphs.defaults["com.Tosche.MakeBubbleLayers.excessRadio"] = self.w.excessRadio.get()
+			Glyphs.defaults["com.Tosche.MakeBubbleLayers.editRound"] = self.w.editRound.get()
 			Glyphs.defaults["com.Tosche.MakeBubbleLayers.overwriteRadio"] = self.w.overwriteRadio.get()
 			Glyphs.defaults["com.Tosche.MakeBubbleLayers.masterRadio"] = self.w.masterRadio.get()
 		except:
@@ -85,6 +88,7 @@ class MakeBubbleLayers( object ):
 			self.w.editV.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.editV"] )
 			self.w.adhereToSB.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.adhereToSB"] )
 			self.w.excessRadio.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.excessRadio"] )
+			self.w.editRound.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.editRound"] )
 			self.w.overwriteRadio.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.overwriteRadio"] )
 			self.w.masterRadio.set( Glyphs.defaults["com.Tosche.MakeBubbleLayers.masterRadio"] )
 		except:
@@ -100,8 +104,10 @@ class MakeBubbleLayers( object ):
 	def checkBoxCallback(self,sender):
 		try:
 			if sender.get():
+				self.w.excess.enable(True)
 				self.w.excessRadio.enable(True)
 			else:
+				self.w.excess.enable(False)
 				self.w.excessRadio.enable(False)
 		except Exception, e:
 			Glyphs.showMacroWindow()
@@ -217,6 +223,8 @@ class MakeBubbleLayers( object ):
 		try:
 			self.progress.show()
 			self.progress.makeKey()
+			roundRadius = int(self.w.editRound.get())
+			adhereToSB = self.w.adhereToSB.get()
 			font = Glyphs.font # frontmost font
 			fontMaster = font.selectedFontMaster # active master
 			selectedLayers = font.selectedLayers # active layers of selected glyphs
@@ -240,13 +248,13 @@ class MakeBubbleLayers( object ):
 					glyph.beginUndo() # begin undo grouping			
 					if self.w.overwriteRadio.get() == 0: # never overwrite
 						# bubbleList is a list of masters that have bubble layer
-						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' ]
+						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name == 'bubble' ]
 					elif self.w.overwriteRadio.get() == 1: # make new only if empty
-						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name=='bubble' and len(layer.paths) > 0 ]
+						bubbleList = [ layer.associatedFontMaster() for layer in glyph.layers if layer.name == 'bubble' and len(layer.paths) > 0 ]
 						bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' and len(layer.paths)==0 ]
 					else: #Always delete and make new
 						bubbleList = []
-						bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' ]
+						bubblesToBeDeleted = [ layer for layer in glyph.layers if layer.name=='bubble' and layer.associatedFontMaster() in masters ]
 					if 'bubblesToBeDeleted' in locals():
 						for emptyBubble in bubblesToBeDeleted:
 							glyph.removeLayerForKey_(emptyBubble.layerId)
@@ -264,8 +272,12 @@ class MakeBubbleLayers( object ):
 								if path.direction == 1:
 									path.reverse()
 							newBubbleLayer.removeOverlap() # remove overlap again to eliminate all negative path
-							if self.w.adhereToSB.get():
+							if adhereToSB:
 								self.fitToSidebearing(newBubbleLayer, master)
+							if roundRadius != 0:
+								roundFilter = NSClassFromString("GlyphsFilterRoundCorner")
+								roundFilter.roundLayer_radius_checkSelection_visualCorrect_grid_( newBubbleLayer, roundRadius, False, True, False )
+
 							glyph.layers.append(newBubbleLayer)
 							for p in newBubbleLayer.paths: # rounding all coordinates
 								for n in p.nodes:
@@ -274,14 +286,12 @@ class MakeBubbleLayers( object ):
 					glyph.endUndo()   # end undo grouping
 					counter += 1.0
 					self.progress.text.set("Please wait...%s%%" % int((counter/layersCount)*100) )
-	#				self.progress.bar.set((counter/layersCount)*100.0)
 			self.progress.hide()
 			font.enableUpdateInterface() # re-enables UI updates in Font View
 	
 			if not self.SavePreferences( self ):
 				print "Note: 'Make Bubble Layers' could not write preferences."
 		except Exception, e:
-			# brings macro window to front and reports error:
 			Glyphs.showMacroWindow()
 			print "Make Bubble Layers Error (MakeBubbleLayersMain): %s" % e
 
