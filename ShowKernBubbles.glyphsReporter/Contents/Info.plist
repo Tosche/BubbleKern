@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>5</string>
 	<key>CFBundleShortVersionString</key>
 	<string>2.0</string>
 	<key>UpdateFeedURL</key>
