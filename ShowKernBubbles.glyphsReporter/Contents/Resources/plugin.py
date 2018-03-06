@@ -18,9 +18,6 @@ class ShowKernBubbles(ReporterPlugin):
 
 	def settings(self):
 		self.menuName = Glyphs.localize({'en': u'Kern Bubbles'})
-#		self.generalContextMenus = [
-#			{'name': Glyphs.localize({'en': u'Do something', 'de': u'Tu etwas'}), 'action': self.doSomething},
-#		]
 
 	def fillBubblePaths(self, givenLayer): # give it master layer
 		try:
