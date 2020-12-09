@@ -20,6 +20,8 @@ from robofab.interface.all.dialogs import AskString, AskYesNoCancel # for gettin
 from vanilla.dialogs import askYesNo
 from math import ceil # for rounding up kerning value
 from AppKit import NSDragOperationMove
+from AppKit import NSFont
+from AppKit import NSMenuItem
 
 prevX = 180
 edY = 22
@@ -48,7 +50,7 @@ else: # Fallback to default favourite dictionary
 	] }
 
 def favNameList(dic):
-	return sorted([i for i,value in dic.iteritems()], key=lambda s: s.lower())
+	return sorted([i for i,value in iter(dic.items())], key=lambda s: s.lower())
 
 class BubbleKern( object ):
 	def __init__( self ):
@@ -118,7 +120,7 @@ class BubbleKern( object ):
 
 		# Load Settings:
 		if not self.LoadPreferences():
-			print "Note: 'BubbleKern' could not load preferences. Will resort to defaults"
+			print("Note: 'BubbleKern' could not load preferences. Will resort to defaults")
 
 		self.refreshTotal()
 		self.refreshSectionPreview(0)
@@ -145,9 +147,9 @@ class BubbleKern( object ):
 				del favDic[saveName]
 #			favDicToSave = NSMutableDictionary.dictionaryWithDictionary_(favDic)
 			Glyphs.defaults["com.Tosche.BubbleKern.favDic"] = favDic
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (SavePreferences): %s" % e
+			print("BubbleKern Error (SavePreferences): %s" % e)
 
 	def favDicToList(self, favName): # set List view using favDic and name key
 		try:
@@ -175,12 +177,12 @@ class BubbleKern( object ):
 #					self.w.tabs[0].permList[favourites.index(fav)] = newDic
 #				else:
 #					self.w.tabs[0].permList.append(newDic)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (favDicToList): %s" % e
+			print("BubbleKern Error (favDicToList): %s" % e)
 
 	def favNameList(self): # Returns list of favDic keys so you can use it in options
-		return sorted([i for i,value in favDic.iteritems()], key=lambda s: s.lower())
+		return sorted([i for i,value in iter(favDic.items())], key=lambda s: s.lower())
 
 	def LoadPreferences( self ):
 		try:
@@ -200,8 +202,8 @@ class BubbleKern( object ):
 			self.w.tabs[1].flatPairs.set(flatPairs)
 			return True
 
-		except Exception, e:
-			print "BubbleKern Error (LoadPreferences): %s" % e
+		except Exception as e:
+			print("BubbleKern Error (LoadPreferences): %s" % e)
 			return False
 
 	def refreshOptions( self ): # refresh option items
@@ -213,9 +215,9 @@ class BubbleKern( object ):
 			divider0 = NSMenuItem.separatorItem()
 			menu.insertItem_atIndex_(divider0, 6)
 			menu.itemAtIndex_(7).setEnabled_(False)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (refreshOptions): %s" % e
+			print("BubbleKern Error (refreshOptions): %s" % e)
 
 	def optionTasks( self, sender ): # variety of stuff tabs[0].option has to do
 		try:
@@ -270,9 +272,9 @@ class BubbleKern( object ):
 			elif index >= 8: # if one of Favourites
 				lastIndex = index
 				self.favDicToList(favNameList[index-8])
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (optionTasks): %s" % e
+			print("BubbleKern Error (optionTasks): %s" % e)
 
 	def refreshSectionPreview( self, i ): # i = row index
 		try:
@@ -284,8 +286,8 @@ class BubbleKern( object ):
 			if isFlipped == True:
 				preview.extend(["%s %s" % (charB, charA) for charA in mixA for charB in mixB ])
 			self.w.tabs[0].preview.set('\n'.join(preview))
-		except Exception, e:
-			print "BubbleKern Error (refreshSectionPreview): %s" % e
+		except Exception as e:
+			print("BubbleKern Error (refreshSectionPreview): %s" % e)
 
 	def permListSelected(self, sender): # Used to refresh Pair Count and Section Preview.
 		try:
@@ -312,8 +314,8 @@ class BubbleKern( object ):
 				self.refreshSectionPreview(sender.getSelection()[0])
 			except IndexError:
 				pass
-		except Exception, e:
-			print "BubbleKern Error (permListSelected): %s" % e
+		except Exception as e:
+			print("BubbleKern Error (permListSelected): %s" % e)
 
 	def permListDoubleClick(self, sender): # Make a new sheet appear
 		try:
@@ -334,9 +336,9 @@ class BubbleKern( object ):
 			self.s.open()
 		except IndexError:
 				pass
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (permListDoubleClick): %s" % e
+			print("BubbleKern Error (permListDoubleClick): %s" % e)
 
 	def dragCallback(self, sender, indexes):
 		return indexes
@@ -368,27 +370,27 @@ class BubbleKern( object ):
 	def _dragCallback(self, sender, indexes): # It's supposed to initialise dragging?
 					#Added "indexes" because some other script was doing it, though I don't know why.
 		try:
-			print indexes
-			print 'being dragged!'
+			print(indexes)
+			print('being dragged!')
 			return sender.getSelection()[0]
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (dragCallback): %s" % e
+			print("BubbleKern Error (dragCallback): %s" % e)
 
 	def dropCallback(self, sender, info): # It's supposed to accept dropped item and reorder. I don't know how to make it work.
 		try:
-			print "dropped!"
-		except Exception, e:
+			print("dropped!")
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (dropCallback): %s" % e
+			print("BubbleKern Error (dropCallback): %s" % e)
 
 	def addButton(self, sender): # Adds a new line at the bottom of the List
 		try:
 			emptyPermutation = {" ": len(self.w.tabs[0].permList)+1, "Left":"", "Right":"", "Add Flipped":False, "Pair Count":0 }
 			self.w.tabs[0].permList.append(emptyPermutation)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (addButton): %s" % e
+			print("BubbleKern Error (addButton): %s" % e)
 
 	def delButton(self, sender): # Deletes the selected row in the List
 		try:
@@ -403,17 +405,17 @@ class BubbleKern( object ):
 			for i in range(len(self.w.tabs[0].permList)):
 				totalPairs += self.w.tabs[0].permList[i]["Pair Count"]
 			self.w.tabs[0].total.set("Total: %s" % totalPairs)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (refreshTotal): %s" % e
+			print("BubbleKern Error (refreshTotal): %s" % e)
 
 # Functions specific to sheet from here
 	def cancelChange(self, sender):
 		try:
 			self.s.close()
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (cancelChange): %s" % e
+			print("BubbleKern Error (cancelChange): %s" % e)
 
 	def cleanUpText(self, text): # Function to clean up the text in sheet
 		try:
@@ -442,9 +444,9 @@ class BubbleKern( object ):
 				self.w.tabs[0].permList[i]["Right"] = newText2
 				self.s.close()
 				self.refreshSectionPreview(i)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (confirmChange): %s" % e
+			print("BubbleKern Error (confirmChange): %s" % e)
 
 # Functions specific to tabs[1] from here
 	def loadFile( self, sender ):
@@ -461,9 +463,9 @@ class BubbleKern( object ):
 			self.w.tabs[1].flatPairs.set( theFileContent )
 			theFile.close()
 			self.refreshPairNum(self)
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (loadFile): %s" % e
+			print("BubbleKern Error (loadFile): %s" % e)
 
 	def refreshPairNum( self, sender ): # function to refresh pair number count.
 		try:
@@ -487,8 +489,8 @@ class BubbleKern( object ):
 			self.w.tabs[1].pairNum.set( textToSet )
 			if sender == self.w.allButton or self.w.selButton:
 				return isSafe, someList
-		except Exception, e:
-			print "BubbleKern Error (refreshPairNum): %s" % e
+		except Exception as e:
+			print("BubbleKern Error (refreshPairNum): %s" % e)
 
 	#　function that rounds up the given number to nearest 10, used for applying minimal kernValue
 	# I use this because kern value may be negative.
@@ -581,7 +583,7 @@ class BubbleKern( object ):
 					kernValue = 1000
 					# maximum possible kern value, half width of whichever is narrower
 					maxKern = min(font.glyphs[left].layers[theMaster.id].width, font.glyphs[right].layers[theMaster.id].width)/2-1
-					for y, value in bubbleDic[left]["RB"].iteritems():
+					for y, value in iter(bubbleDic[left]["RB"].items()):
 						if y in bubbleDic[right]["LB"]:
 							if value + bubbleDic[right]["LB"][y] <= kernValue:
 								kernValue = value + bubbleDic[right]["LB"][y]
@@ -595,9 +597,9 @@ class BubbleKern( object ):
 			self.progress.hide()
 			font.enableUpdateInterface()
 		# When do you save flat text?
-		except Exception, e:
+		except Exception as e:
 			Glyphs.showMacroWindow()
-			print "BubbleKern Error (BubbleKernMain): %s" % e
+			print("BubbleKern Error (BubbleKernMain): %s" % e)
 
 BubbleKern()
 try:
