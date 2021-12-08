@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>English</string>
-	<key>CFBundleDisplayName</key>
-	<string>ShowKernBubbles</string>
+	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>plugin</string>
 	<key>CFBundleIdentifier</key>
@@ -14,12 +12,10 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>ShowKernBubbles</string>
-	<key>CFBundlePackageType</key>
-	<string>BNDL</string>
-	<key>CFBundleVersion</key>
-	<string>5</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.0</string>
+	<string>2.1</string>
+	<key>CFBundleVersion</key>
+	<string>6</string>
 	<key>UpdateFeedURL</key>
 	<string>https://raw.githubusercontent.com/Tosche/BubbleKern/master/ShowKernBubbles.glyphsReporter/Contents/Info.plist</string>
 	<key>productPageURL</key>
@@ -27,12 +23,8 @@
 	<key>productReleaseNotes</key>
 	<string>2.0: Complete rewrite.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright, Toshi Omagari, 2016</string>
+	<string>Copyright, Toshi Omagari, 2021</string>
 	<key>NSPrincipalClass</key>
 	<string>ShowKernBubbles</string>
-	<key>PyMainFileNames</key>
-	<array>
-		<string>../MacOS/main.py</string>
-	</array>
 </dict>
 </plist>
