@@ -37,7 +37,7 @@ class MakeBubbleLayers(object):
 		self.w.editV = vanilla.EditText((-spX - 80, spY * 2 + txY, -spX, edY), "60")
 		self.w.line1 = vanilla.HorizontalLine((0, spY * 3 + txY * 2 + 5, -0, 1))
 		# Sidebearing modification:
-		self.w.adhereToSB = vanilla.CheckBox((spX, spY * 4 + txY * 2, -spX, edY), "Adhere to Sidebearigs", callback=self.checkBoxCallback, value=True)
+		self.w.adhereToSB = vanilla.CheckBox((spX, spY * 4 + txY * 2, -spX, edY), "Adhere to Sidebearings", callback=self.checkBoxCallback, value=True)
 		self.w.excess = vanilla.TextBox((spX + 16, spY * 5 + txY * 3 - 7, -spX, txY), "Exceeding outlines are:")
 		self.w.excessRadio = vanilla.RadioGroup(
 			(spX + 16, spY * 6 + txY * 4 - 14, 160, edY),
@@ -169,13 +169,13 @@ class MakeBubbleLayers(object):
 			nudgeExcess = True if self.w.excessRadio.get() == 0 else False
 			boundL = givenLayer.bounds.origin.x
 			boundR = boundL + givenLayer.bounds.size.width
-			for thisPath in givenLayer.paths:
-				numOfNodes = len(thisPath.nodes)
-				for i in range(numOfNodes):
-					node = thisPath.nodes[i]
+			for thisPath in givenLayer.paths: # nudge-out the inside extremes
+				for node in thisPath.nodes:
 					interesting = False
-					if node.type != GSOFFCURVE:
+					if node.type != GSOFFCURVE: # if on-curve
+						print(node)
 						if node.x < 0 and nudgeExcess:
+							print(1, node)
 							interesting = True
 							offsetX = -node.x
 						elif (0 < node.x) and (node.x == boundL):
@@ -188,21 +188,21 @@ class MakeBubbleLayers(object):
 							interesting = True
 							offsetX = givenLayer.width - node.x
 						if interesting:
-							nodeBefore = thisPath.nodes[i - 1]
-							if nodeBefore.type == GSOFFCURVE:
-								if thisPath.nodes[i - 2].type == GSOFFCURVE:  # if two previous nodes are offcurve
+							prevNode = node.prevNode
+							nextNode = node.nextNode
+							if prevNode.type == GSOFFCURVE:
+								if prevNode.prevNode.type == GSOFFCURVE:  # if two previous nodes are offcurve
 									oncurveMv = node
-									offcurve1 = nodeBefore
-									offcurve2 = thisPath.nodes[i - 2]
-									oncurveSt = thisPath.nodes[i - 3]
+									offcurve1 = prevNode
+									offcurve2 = offcurve1.prevNode
+									oncurveSt = offcurve2.prevNode
 									self.nudgeCurve(oncurveMv, offcurve1, offcurve2, oncurveSt, offsetX)  # only moves offcurve
-							nodeAfter = thisPath.nodes[i + 1]
-							if nodeAfter.type == GSOFFCURVE:
-								if thisPath.nodes[i + 2].type == GSOFFCURVE:  # if two next nodes are offcurve
+							if nextNode.type == GSOFFCURVE:
+								if nextNode.nextNode.type == GSOFFCURVE:  # if two next nodes are offcurve
 									oncurveMv = node
-									offcurve1 = nodeAfter
-									offcurve2 = thisPath.nodes[i + 2]
-									oncurveSt = thisPath.nodes[i + 3]
+									offcurve1 = nextNode
+									offcurve2 = offcurve1.nextNode
+									oncurveSt = offcurve2.nextNode
 									self.nudgeCurve(oncurveMv, offcurve1, offcurve2, oncurveSt, offsetX)  # only moves offcurve
 							node.x += offsetX  # on curve node moves here
 			if nudgeExcess == False:  # if Trim Option is on
@@ -228,11 +228,17 @@ class MakeBubbleLayers(object):
 						eraserRect.nodes.append(newNode)
 					eraserRect.closed = True
 					Erasers.append(eraserRect)
-				PathOperator = GSPathOperator.alloc().init()
-				Paths = givenLayer.pyobjc_instanceMethods.paths()
-				PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
-				for p in Paths:
-					p.parent = givenLayer
+
+				if Glyphs.versionNumber >= 3.0:
+					subtractedPaths = subtractPaths([p for p in givenLayer.paths], Erasers)
+					givenLayer.clear()
+					for p in subtractedPaths:
+						givenLayer.paths.append(p)
+				else:
+					PathOperator = GSPathOperator.alloc().init()
+					Paths = givenLayer.pyobjc_instanceMethods.paths()
+					PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
+
 		except Exception as e:
 			Glyphs.showMacroWindow()
 			print("Make Bubble Layers Error (fitToSidebearing): %s" % e)

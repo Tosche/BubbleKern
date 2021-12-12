@@ -24,7 +24,10 @@ for layer in selectedLayers:
 	for bubble in bubbleLayerList:
 		if bubble.associatedFontMaster() == fontMaster:
 			print("delete")
-			glyph.removeLayerForKey_(bubble.layerId)
+			if Glyphs.versionNumber >= 3:
+				glyph.removeLayerForId_(bubble.layerId)
+			else:
+				glyph.removeLayerForKey_(bubble.layerId)
 	glyph.endUndo()  # end undo grouping
 
 font.enableUpdateInterface()  # re-enables UI updates in Font View

@@ -277,7 +277,16 @@ class BubbleKern(object):
 			if Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"] != None:
 				flatPairs = Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"]
 			else:  # Fall Back to Default Text
-				flatPairs = "Welcome!\n\nBelow is a sample of flat text pairs. Each line should be a pair, two glyph names separated by a space.\n\nA T\nT A\nT a\nT adieresis\n\nWhen you actually kern, there should be no junk lines such as this welcome text."
+				flatPairs = """Welcome!
+
+Below is a sample of flat text pairs. Each line should be a pair, two glyph names separated by a space.
+
+A T
+T A
+T a
+T adieresis
+
+When you actually kern, there should be no junk lines such as this welcome text."""
 			self.w.tabs[1].flatPairs.set(flatPairs)
 			return True
 
@@ -334,7 +343,7 @@ class BubbleKern(object):
 				if newName == "":  # exists already or empty, or None:
 					self.w.tabs[0].options.set(lastIndex)
 				elif newName in favDic:
-					Glyphs.displayDialog_("A set with the same name already exists.")
+					Message('', "A set with the same name already exists.")
 					self.w.tabs[0].options.set(lastIndex)
 				else:
 					self.SavePreferences(newName, False)  # deleteBool = False
@@ -344,7 +353,7 @@ class BubbleKern(object):
 			elif index == 4:  # Delete Set from Favourites...
 				lastName = favNameList[lastIndex - 8]
 				if len(favNameList) == 1:
-					Glyphs.displayDialog_("Actually, you can't empty the Favourites list.\nSorry for my incompetent coding.")
+					Message('', "Actually, you can't empty the Favourites list.\nSorry for my incompetent coding.")
 				else:
 					if (
 						askYesNo(
@@ -540,7 +549,7 @@ class BubbleKern(object):
 			newText1 = self.cleanUpText(text1)
 			newText2 = self.cleanUpText(text2)
 			if newText1 == False or newText2 == False:
-				Glyphs.displayDialog_("Invalid input. Only a string of glyph names separated by space, comma, or slash is accepted.")
+				Message('', "Invalid input. Only a string of glyph names separated by space, comma, or slash is accepted.")
 			else:
 				i = self.w.tabs[0].permList.getSelection()[0]
 				self.w.tabs[0].permList[i]["Left"] = newText1
@@ -622,7 +631,7 @@ class BubbleKern(object):
 				if self.refreshPairNum(sender)[0]:  # it's safe to process
 					pairList = self.refreshPairNum(sender)[1]
 				else:
-					Glyphs.displayDialog_("You need to clean up your text first!")
+					Message('', "You need to clean up your text first!")
 			font = Glyphs.font
 			font.disableUpdateInterface()
 			theMaster = font.selectedFontMaster
@@ -648,7 +657,10 @@ class BubbleKern(object):
 						if layer.name == "bubble" and layer.associatedFontMaster() == theMaster:  # if bubble layer exists in a glyph
 							finalBubbleLayer.width = layer.width
 							for pathToCopy in layer.paths:
-								finalBubbleLayer.addPath_(pathToCopy.copy())
+								if Glyphs.versionNumber >= 3:
+									finalBubbleLayer.addShape_(pathToCopy.copy())
+								else:
+									finalBubbleLayer.addPath_(pathToCopy.copy())
 						if layer == glyph.layers[theMaster.id]:
 							theComponents = layer.components
 							numberOfComponents = len(theComponents)
@@ -662,7 +674,10 @@ class BubbleKern(object):
 												Transform.setTransformStruct_(thisCompo.transform)
 												copiedLayer.transform_checkForSelection_(Transform, False)
 												for pathCopy in copiedLayer.paths:
-													finalBubbleLayer.addPath_(pathCopy)
+													if Glyphs.versionNumber >= 3:
+														finalBubbleLayer.addShape_(pathCopy)
+													else:
+														finalBubbleLayer.addPath_(pathCopy)
 											except:
 												pass
 
