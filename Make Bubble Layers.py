@@ -67,8 +67,8 @@ class MakeBubbleLayers(object):
 		self.w.runButton = vanilla.Button((-80 - 15, -20 - 15, -15, -15), "Go!", sizeStyle="regular", callback=self.MakeBubbleLayersMain)
 		self.w.setDefaultButton(self.w.runButton)
 
-		self.progress = vanilla.Window((200, 65), closable=False, miniaturizable=False)
-		self.progress.text = vanilla.TextBox((spX, spY, -spX, txY), "Please wait...")
+		# self.progress = vanilla.Window((200, 65), closable=False, miniaturizable=False)
+		# self.progress.text = vanilla.TextBox((spX, spY, -spX, txY), "Please wait...")
 
 		# Load Settings:
 		if not self.LoadPreferences():
@@ -79,9 +79,9 @@ class MakeBubbleLayers(object):
 		# Open window and focus on it:
 		self.w.open()
 		self.w.makeKey()
-		self.progress.open()
-		self.progress.center()
-		self.progress.hide()
+		# self.progress.open()
+		# self.progress.center()
+		# self.progress.hide()
 
 	def SavePreferences(self, sender):
 		try:
@@ -111,11 +111,11 @@ class MakeBubbleLayers(object):
 
 		return True
 
-	def closeProgress(self):
-		try:
-			self.progress.close()
-		except:
-			pass
+	# def closeProgress(self):
+	# 	try:
+	# 		self.progress.close()
+	# 	except:
+	# 		pass
 
 	def checkBoxCallback(self, sender):
 		try:
@@ -173,9 +173,7 @@ class MakeBubbleLayers(object):
 				for node in thisPath.nodes:
 					interesting = False
 					if node.type != GSOFFCURVE: # if on-curve
-						print(node)
 						if node.x < 0 and nudgeExcess:
-							print(1, node)
 							interesting = True
 							offsetX = -node.x
 						elif (0 < node.x) and (node.x == boundL):
@@ -245,8 +243,8 @@ class MakeBubbleLayers(object):
 
 	def MakeBubbleLayersMain(self, sender):
 		try:
-			self.progress.show()
-			self.progress.makeKey()
+			# self.progress.show()
+			# self.progress.makeKey()
 			roundRadius = int(self.w.editRound.get())
 			adhereToSB = self.w.adhereToSB.get()
 			font = Glyphs.font  # frontmost font
@@ -287,8 +285,19 @@ class MakeBubbleLayers(object):
 							newBubbleLayer.name = "bubble"
 							newBubbleLayer.width = glyph.layers[master.id].width
 							newBubbleLayer.associatedMasterId = master.id
-							for pathToCopy in glyph.layers[master.id].paths:
+
+							# This section removes components and then flattens corner components etc.
+							#
+							parentLayer = glyph.layers[master.id]
+							li = parentLayer.copy() # leaves smart stuff behind.
+							li.parent = parentLayer.parent
+							for i in range(len(li.components)):
+								li.removeShape_(li.components[0])
+							# li2 = li.copyDecomposedLayer() # also decomposes components.
+							li.decomposeSmartOutlines()
+							for pathToCopy in li.paths:
 								newBubbleLayer.paths.append(pathToCopy.copy())
+							newBubbleLayer.decomposeSmartOutlines()
 							self.offsetPath(newBubbleLayer, offsetH, offsetV)  # SHOULD NOT BE EXECUTED IF SIDEBEARING OPTION IS OFF
 							newBubbleLayer.removeOverlap()
 							for path in newBubbleLayer.paths:  # remove negative path because you don't need it
@@ -308,8 +317,8 @@ class MakeBubbleLayers(object):
 									n.y = int(round(n.y))
 					glyph.endUndo()  # end undo grouping
 					counter += 1.0
-					self.progress.text.set("Please wait...%s%%" % int((counter / layersCount) * 100))
-			self.progress.hide()
+					# self.progress.text.set("Please wait...%s%%" % int((counter / layersCount) * 100))
+			# self.progress.hide()
 			font.enableUpdateInterface()  # re-enables UI updates in Font View
 
 			if not self.SavePreferences(self):

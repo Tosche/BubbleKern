@@ -82,7 +82,6 @@ else:  # Fallback to default favourite dictionary
 def favNameList(dic):
 	return sorted([i for i, value in iter(dic.items())], key=lambda s: s.lower())
 
-
 class BubbleKern(object):
 	def __init__(self):
 		windowWidth = 600
@@ -653,6 +652,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 				if font.glyphs[glyphName]:
 					glyph = font.glyphs[glyphName]
 					finalBubbleLayer = GSLayer()  # gather all bubble outline data in this ghost layer. Initialise at every glyph
+					finalBubbleLayer.parent = glyph  # necessary for accurately referencing components.
 					for layer in glyph.layers:
 						if layer.name == "bubble" and layer.associatedFontMaster() == theMaster:  # if bubble layer exists in a glyph
 							finalBubbleLayer.width = layer.width
@@ -661,25 +661,28 @@ When you actually kern, there should be no junk lines such as this welcome text.
 									finalBubbleLayer.addShape_(pathToCopy.copy())
 								else:
 									finalBubbleLayer.addPath_(pathToCopy.copy())
-						if layer == glyph.layers[theMaster.id]:
-							theComponents = layer.components
-							numberOfComponents = len(theComponents)
-							if numberOfComponents != 0:  # if the master layer has components
-								for thisCompo in theComponents:
-									for thisLayer in thisCompo.component.layers:
-										if thisLayer.name == "bubble" and thisLayer.associatedFontMaster() == theMaster:  # if component has a bubble
-											try:
-												copiedLayer = thisLayer.copy()
-												Transform = NSAffineTransform.transform()
-												Transform.setTransformStruct_(thisCompo.transform)
-												copiedLayer.transform_checkForSelection_(Transform, False)
-												for pathCopy in copiedLayer.paths:
-													if Glyphs.versionNumber >= 3:
-														finalBubbleLayer.addShape_(pathCopy)
-													else:
-														finalBubbleLayer.addPath_(pathCopy)
-											except:
-												pass
+						elif layer == glyph.layers[theMaster.id]:
+							l = layer
+							componentChecked = False
+							while len(l.components) > 1 or componentChecked == False:
+								theComponents = l.components
+								if len(theComponents) != 0:  # if the master layer has components
+									for thisCompo in theComponents:
+										for thisLayer in thisCompo.component.layers:
+											if thisLayer.name == "bubble" and thisLayer.associatedFontMaster() == theMaster:  # if component has a bubble
+												try:
+													copiedLayer = thisLayer.copy()
+													copiedLayer.parent = thisLayer.parent
+													copiedLayer.applyTransform(thisCompo.transform)
+													for pathCopy in copiedLayer.paths:
+														if Glyphs.versionNumber >= 3:
+															finalBubbleLayer.addShape_(pathCopy)
+														else:
+															finalBubbleLayer.addPath_(pathCopy)
+													l = thisLayer
+												except:
+													pass
+								componentChecked = True
 
 					if "finalBubbleLayer" in locals():
 						if len(finalBubbleLayer.paths) > 0:
@@ -688,11 +691,14 @@ When you actually kern, there should be no junk lines such as this welcome text.
 							bubbleDic[glyph.name]["RB"] = {}
 							highest = int(finalBubbleLayer.bounds.origin.y + finalBubbleLayer.bounds.size.height)
 							lowest = int(round(finalBubbleLayer.bounds.origin.y / unit) * unit - unit)
+							
 							for y in range(lowest, highest, unit):
 								intersections = finalBubbleLayer.intersectionsBetweenPoints((-4000, y), (4000, y))
+								# print(intersections)
 								if len(intersections) > 2:
 									bubbleDic[glyph.name]["LB"][y] = round(intersections[1].x)
 									bubbleDic[glyph.name]["RB"][y] = glyph.layers[theMaster.id].width - round(intersections[-2].x)
+			
 			# Roundup function was here
 			for pair in pairList:
 				(left, right) = pair.split()
