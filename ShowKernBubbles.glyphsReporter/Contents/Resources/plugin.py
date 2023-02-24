@@ -3,128 +3,157 @@
 ###########################################################################################################
 #
 #
-# 	Reporter Plugin
+#	Reporter Plugin
 #
-# 	Read the docs:
-# 	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
+#	Read the docs:
+#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
 #
 #
 ###########################################################################################################
 
 
+from __future__ import division, print_function, unicode_literals
+import objc
+from GlyphsApp import *
 from GlyphsApp.plugins import *
+import traceback
+from dataclasses import dataclass, field
 
+@dataclass()
+class layerAttributes:
+	bubble: GSLayer = None
+	transform: tuple = None
+	children: list[int] = field(default_factory=list) # another layerAttributes?
+	depth: int = 0
 
 class ShowKernBubbles(ReporterPlugin):
+
 	@objc.python_method
 	def settings(self):
-		self.menuName = Glyphs.localize({"en": u"Kern Bubbles"})
+		self.menuName = Glyphs.localize({
+			'en': 'Kern Bubbles',
+			})
+		self.generalContextMenus = [{
+			'name': Glyphs.localize({
+				'en': 'Do something',
+				}), 
+			'action': self.doSomething_
+			}]
 
 	@objc.python_method
-	def fillBubblePaths(self, givenLayer):  # give it master layer
+	def collectBubbleShapes(self, layer, theTransform=(1.0, 0.0, 0.0, 1.0, 0.0, 0.0), depth=0):
+		# Input layer, transform, and bubble pursuit level.
+		# Returns a layer attributes instance.
 		try:
-			NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.4, 1.0, 0.25).set()
-			# NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
-			for l in givenLayer.parent.layers:
-				if l.name == "bubble" and l.associatedFontMaster() == givenLayer.associatedFontMaster():
-					if len(l.paths) > 0:
-						l.bezierPath.fill()
+			m = Glyphs.font.selectedFontMaster
+			thePath = None
+			children = []
+			theMasterLayer = layer.parent.layers[m.id]
+			if theMasterLayer is not None:
+				if theMasterLayer.components:
+					for c in theMasterLayer.components:
+						children.append(self.collectBubbleShapes(c.componentLayer, c.transform, depth+1))
+			for l in layer.parent.layers:
+				if l.name == 'bubble' and l.master == m: # path
+					thePath = l.completeBezierPath
+					break
+			currentAttributes = layerAttributes(l, theTransform, children, depth)
+			return currentAttributes
 		except:
-			pass
-
-	# 			Glyphs.showMacroWindow()
-	# 			print("Show Kern Bubbles Error (fillBubblePaths): %s" % e)
+			print('collectBubbleShapes error: ', traceback.format_exc())
 
 	@objc.python_method
-	def fillBubbleCompo(self, givenLayer):  # give it the master layer
+	def buildBubble(self, theAttributes, li, inheritedTransforms=[], lastDepth=0):
+		# receives bubble attributes, li (imaginary layer) to build a bubble, parent attributes.
+		# Adds bubble shape to the li.
 		try:
-			NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.4, 1.0, 0.25).set()
-			# NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
-			if len(givenLayer.components) > 0:
-				for thisCompo in givenLayer.components:
-					for thisLayer in thisCompo.component.layers:
-						if thisLayer.name == "bubble" and thisLayer.associatedFontMaster() == givenLayer.associatedFontMaster():
-							copiedLayer = thisLayer.copy()
-							Transform = NSAffineTransform.transform()
-							Transform.setTransformStruct_(thisCompo.transform)
-							copiedLayer.transform_checkForSelection_(Transform, False)
-							for pathCopy in copiedLayer.paths:
-								pathCopy.bezierPath.fill()
+			if theAttributes.children: # if there are components
+				for c in theAttributes.children: # c = attribute
+					if theAttributes.transform is not None:
+						inheritedTransforms.append(theAttributes.transform)
+					self.buildBubble(c, li, inheritedTransforms)
+			possibleBubble = theAttributes.bubble
+			if possibleBubble.name == 'bubble':
+				currentDepth = theAttributes.depth
+				bubbleCopy = possibleBubble.copy()
+				inheritedTransforms.append(theAttributes.transform)
+				for t in inheritedTransforms:
+					trans = NSAffineTransform()
+					trans.setTransformStruct_(t)
+					bubbleCopy.transform(trans)
+				for s in bubbleCopy.shapes:
+					li.shapes.append(s.copy())
+				for i in range(currentDepth-lastDepth):
+					if inheritedTransforms:
+						inheritedTransforms.pop(-1)
+				lastDepth = currentDepth
 		except:
-			pass
-
-	# 			Glyphs.showMacroWindow()
-	# 			print("Show Kern Bubbles Error (fillBubbleCompo): %s" % e)
+			print('buildBubble error: ', traceback.format_exc())
 
 	@objc.python_method
-	def fillBlackCompo(self, givenLayer):
+	def inactiveLayerBackground(self, layer): # drawing for non-main glyphs
 		try:
-			if len(givenLayer.components) > 0:
-				for thisCompo in givenLayer.components:
-					for thisLayer in thisCompo.component.layers:
-						copiedLayer = thisLayer.copy()
-						Transform = NSAffineTransform.transform()
-						Transform.setTransformStruct_(thisCompo.transform)
-						copiedLayer.transform_checkForSelection_(Transform, False)
-						for pathCopy in copiedLayer.paths:
-							pathCopy.bezierPath.fill()
-		except:
-			pass
+			defaultColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.4, 1.0, 0.25)
+			defaultColor.set()
 
-	# 			Glyphs.showMacroWindow()
-	# 			print("Show Kern Bubbles Error (fillBlackCompo): %s" % e)
+			theBubbles = self.collectBubbleShapes(layer)
+			li = GSLayer()
+			self.buildBubble(theBubbles, li, [])
+
+			if li.bezierPath is not None: # if there're some contents in li
+				li.bezierPath.fill()
+		except:
+			print('inactiveLayerBackground error: ', traceback.format_exc())
 
 	@objc.python_method
-	def background(self, layer):
+	def background(self, layer): # drawing for the main glyph
 		try:
-			self.fillBubblePaths(layer)
-			self.fillBubbleCompo(layer.parent.layers[layer.associatedMasterId])
-			if layer.name == "bubble":
-				NSColor.colorWithCalibratedRed_green_blue_alpha_(0.0, 0.0, 0.0, 0.5).set()
-				parentLayer = layer.parent.layers[layer.associatedMasterId]
-				if parentLayer.bezierPath:
-					parentLayer.bezierPath.fill()
-				if parentLayer.components:
-					for c in layer.parent.layers[layer.associatedMasterId].components:
-						c.bezierPath.fill()
-		except:
-			pass
+			defaultColor = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.4, 1.0, 0.25)
+			defaultColor.set()
 
-	# 			Glyphs.showMacroWindow()
-	# 			print("Show Kern Bubbles Error (background): %s" % e)
+			theBubbles = self.collectBubbleShapes(layer)
+			li = GSLayer()
+			self.buildBubble(theBubbles, li, [])
+			if li.bezierPath is not None: # if there're some contents in li
+				li.bezierPath.fill()
+		except:
+			print('background error: ', traceback.format_exc())
+	
+	def doSomething_(self, sender): # unused
+		print('Just did something')
 
 	@objc.python_method
-	def inactiveLayers(self, layer):
-		try:
-			if layer.name == "bubble":
-				# fill bubble
-				if len(layer.paths) > 0:
-					NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.4, 1.0, 0.25).set()
-					# NSColor.colorWithCalibratedRed_green_blue_alpha_( 0.8, 0.8, 1.0, 1.0 ).set()
-					layer.bezierPath.fill()
-				self.fillBubbleCompo(layer.parent.layers[layer.associatedMasterId])
-				# fill letterform
-				NSColor.blackColor().set()
-				parentLayer = layer.parent.layers[layer.associatedMasterId]
-				if parentLayer.bezierPath:
-					parentLayer.bezierPath.fill()
-				if parentLayer.components:
-					for c in parentLayer.components:
-						c.bezierPath.fill()
-			else:
-				# fill bubble
-				self.fillBubblePaths(layer)
-				self.fillBubbleCompo(layer.parent.layers[layer.associatedMasterId])
-				# fill letterform
-				NSColor.blackColor().set()
-				if layer.bezierPath:
-					layer.bezierPath.fill()
-				if layer.components:
-					for c in layer.components:
-						c.bezierPath.fill()
-		except:
-			pass
+	def conditionalContextMenus(self):
 
+		# Empty list of context menu items
+		contextMenus = []
 
-# 			Glyphs.showMacroWindow()
-# 			print("Show Kern Bubbles Error (inactiveLayers): %s" % e)
+		# Execute only if layers are actually selected
+		if Glyphs.font.selectedLayers:
+			layer = Glyphs.font.selectedLayers[0]
+			
+			# Exactly one object is selected and it’s an anchor
+			if len(layer.selection) == 1 and type(layer.selection[0]) == GSAnchor:
+				pass
+				# Add context menu item
+				# contextMenus.append({
+				# 	'name': Glyphs.localize({
+				# 		'en': 'Do something else',
+				# 		'de': 'Tu etwas anderes',
+				# 		'fr': 'Faire aute chose',
+				# 		'es': 'Hacer algo más',
+				# 		'pt': 'Faça outra coisa',
+				# 		}), 
+				# 	'action': self.doSomethingElse_
+				# 	})
+
+		# Return list of context menu items
+		return contextMenus
+
+	# def doSomethingElse_(self, sender):
+	# 	print('Just did something else')
+
+	@objc.python_method
+	def __file__(self):
+		"""Please leave this method unchanged"""
+		return __file__

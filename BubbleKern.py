@@ -24,9 +24,12 @@ from robofab.interface.all.dialogs import (
 )  # for getting Save As name and Cancel
 from vanilla.dialogs import askYesNo
 from math import ceil  # for rounding up kerning value
-from AppKit import NSDragOperationMove
-from AppKit import NSFont
-from AppKit import NSMenuItem
+from AppKit import NSDragOperationMove, NSFont, NSMenuItem, NSAffineTransform
+# from AppKit import NSFont
+# from AppKit import NSMenuItem
+from dataclasses import dataclass, field
+import platform # for checking Python version
+import traceback
 
 prevX = 180
 edY = 22
@@ -78,6 +81,12 @@ else:  # Fallback to default favourite dictionary
 		]
 	}
 
+@dataclass()
+class layerAttributes:
+	bubble: GSLayer = None
+	transform: tuple = None
+	children: list[int] = field(default_factory=list) # another layerAttributes?
+	depth: int = 0
 
 def favNameList(dic):
 	return sorted([i for i, value in iter(dic.items())], key=lambda s: s.lower())
@@ -530,7 +539,8 @@ When you actually kern, there should be no junk lines such as this welcome text.
 
 	def cleanUpText(self, text):  # Function to clean up the text in sheet
 		try:
-			text.decode("ascii")
+			if int(platform.python_version()[0]) < 3:
+				text.decode("ascii")
 			if text.count("/") >= 1:  # if text is slash-separated
 				text = re.sub("/", " ", text)
 			text = re.sub("[,\n\t]", " ", text)
@@ -539,6 +549,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 				text = text[1:]
 			return text
 		except:  # The text wasn't ascii-decodable. Probably not a string of glyph names.
+			print('cleanUpText error: ', traceback.format_exc())
 			return False
 
 	def confirmChange(self, sender):
@@ -608,6 +619,54 @@ When you actually kern, there should be no junk lines such as this welcome text.
 	def roundup(self, givenNumber):
 		return int(ceil(givenNumber / 10.0)) * 10
 
+
+	def collectBubbleShapes(self, layer, theTransform=(1.0, 0.0, 0.0, 1.0, 0.0, 0.0), depth=0):
+		# Input layer, transform, and bubble pursuit level.
+		# Returns a layer attributes instance.
+		try:
+			m = Glyphs.font.selectedFontMaster
+			thePath = None
+			children = []
+			theMasterLayer = layer.parent.layers[m.id]
+			if theMasterLayer.components:
+				for c in theMasterLayer.components:
+					children.append(self.collectBubbleShapes(c.componentLayer, c.transform, depth+1))
+			for l in layer.parent.layers:
+				if l.name == 'bubble' and l.master == m: # path
+					thePath = l.completeBezierPath
+					break
+			currentAttributes = layerAttributes(l, theTransform, children, depth)
+			return currentAttributes
+		except:
+			print('collectBubbleShapes error: ', traceback.format_exc())
+
+	def buildBubble(self, theAttributes, li, inheritedTransforms=[], lastDepth=0):
+		# receives bubble attributes, li (imaginary layer) to build a bubble, parent attributes.
+		# Adds bubble shape to the li.
+		try:
+			if theAttributes.children: # if there are components
+				for c in theAttributes.children: # c = attribute
+					if theAttributes.transform is not None:
+						inheritedTransforms.append(theAttributes.transform)
+					self.buildBubble(c, li, inheritedTransforms)
+			possibleBubble = theAttributes.bubble
+			if possibleBubble.name == 'bubble':
+				currentDepth = theAttributes.depth
+				bubbleCopy = possibleBubble.copy()
+				inheritedTransforms.append(theAttributes.transform)
+				for t in inheritedTransforms:
+					trans = NSAffineTransform()
+					trans.setTransformStruct_(t)
+					bubbleCopy.transform(trans)
+				for s in bubbleCopy.shapes:
+					li.shapes.append(s.copy())
+				for i in range(currentDepth-lastDepth):
+					if inheritedTransforms:
+						inheritedTransforms.pop(-1)
+				lastDepth = currentDepth
+		except:
+			print('buildBubble error: ', traceback.format_exc())
+
 	def BubbleKernMain(self, sender):
 		try:
 			self.progress.show()
@@ -651,53 +710,26 @@ When you actually kern, there should be no junk lines such as this welcome text.
 			for glyphName in charSet:
 				if font.glyphs[glyphName]:
 					glyph = font.glyphs[glyphName]
-					finalBubbleLayer = GSLayer()  # gather all bubble outline data in this ghost layer. Initialise at every glyph
-					finalBubbleLayer.parent = glyph  # necessary for accurately referencing components.
-					for layer in glyph.layers:
-						if layer.name == "bubble" and layer.associatedFontMaster() == theMaster:  # if bubble layer exists in a glyph
-							finalBubbleLayer.width = layer.width
-							for pathToCopy in layer.paths:
-								if Glyphs.versionNumber >= 3:
-									finalBubbleLayer.addShape_(pathToCopy.copy())
-								else:
-									finalBubbleLayer.addPath_(pathToCopy.copy())
-						elif layer == glyph.layers[theMaster.id]:
-							l = layer
-							componentChecked = False
-							while len(l.components) > 1 or componentChecked == False:
-								theComponents = l.components
-								if len(theComponents) != 0:  # if the master layer has components
-									for thisCompo in theComponents:
-										for thisLayer in thisCompo.component.layers:
-											if thisLayer.name == "bubble" and thisLayer.associatedFontMaster() == theMaster:  # if component has a bubble
-												try:
-													copiedLayer = thisLayer.copy()
-													copiedLayer.parent = thisLayer.parent
-													copiedLayer.applyTransform(thisCompo.transform)
-													for pathCopy in copiedLayer.paths:
-														if Glyphs.versionNumber >= 3:
-															finalBubbleLayer.addShape_(pathCopy)
-														else:
-															finalBubbleLayer.addPath_(pathCopy)
-													l = thisLayer
-												except:
-													pass
-								componentChecked = True
 
-					if "finalBubbleLayer" in locals():
-						if len(finalBubbleLayer.paths) > 0:
-							bubbleDic[glyph.name] = {}
-							bubbleDic[glyph.name]["LB"] = {}
-							bubbleDic[glyph.name]["RB"] = {}
-							highest = int(finalBubbleLayer.bounds.origin.y + finalBubbleLayer.bounds.size.height)
-							lowest = int(round(finalBubbleLayer.bounds.origin.y / unit) * unit - unit)
-							
-							for y in range(lowest, highest, unit):
-								intersections = finalBubbleLayer.intersectionsBetweenPoints((-4000, y), (4000, y))
-								# print(intersections)
-								if len(intersections) > 2:
-									bubbleDic[glyph.name]["LB"][y] = round(intersections[1].x)
-									bubbleDic[glyph.name]["RB"][y] = glyph.layers[theMaster.id].width - round(intersections[-2].x)
+					theBubbles = self.collectBubbleShapes(glyph.layers[theMaster.id])
+					finalBubbleLayer = GSLayer()
+					finalBubbleLayer.parent = glyph
+					self.buildBubble(theBubbles, finalBubbleLayer, [])
+
+					# if "finalBubbleLayer" in locals():
+					if len(finalBubbleLayer.paths) > 0:
+						bubbleDic[glyph.name] = {}
+						bubbleDic[glyph.name]["LB"] = {}
+						bubbleDic[glyph.name]["RB"] = {}
+						highest = int(finalBubbleLayer.bounds.origin.y + finalBubbleLayer.bounds.size.height)
+						lowest = int(round(finalBubbleLayer.bounds.origin.y / unit) * unit - unit)
+						
+						for y in range(lowest, highest, unit):
+							intersections = finalBubbleLayer.intersectionsBetweenPoints((-4000, y), (4000, y))
+							# print(intersections)
+							if len(intersections) > 2:
+								bubbleDic[glyph.name]["LB"][y] = round(intersections[1].x)
+								bubbleDic[glyph.name]["RB"][y] = glyph.layers[theMaster.id].width - round(intersections[-2].x)
 			
 			# Roundup function was here
 			for pair in pairList:
