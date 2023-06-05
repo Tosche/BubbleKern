@@ -25,6 +25,7 @@ from robofab.interface.all.dialogs import (
 from vanilla.dialogs import askYesNo
 from math import ceil  # for rounding up kerning value
 from AppKit import NSDragOperationMove, NSFont, NSMenuItem, NSAffineTransform
+from Foundation import NSMutableDictionary
 # from AppKit import NSFont
 # from AppKit import NSMenuItem
 from dataclasses import dataclass, field
