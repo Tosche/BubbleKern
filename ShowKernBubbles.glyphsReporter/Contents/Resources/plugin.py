@@ -15,7 +15,7 @@
 from __future__ import division, print_function, unicode_literals
 import objc
 from AppKit import NSColor, NSMenuItem
-from GlyphsApp import Glyphs, GSLayer, GSAnchor, EDIT_MENU
+from GlyphsApp import Glyphs, EDIT_MENU
 from GlyphsApp.plugins import ReporterPlugin
 import traceback
 
@@ -26,13 +26,60 @@ class ShowKernBubbles(ReporterPlugin):
 	def settings(self):
 		self.menuName = Glyphs.localize({
 			'en': 'Kern Bubbles',
-			})
+		})
+		menuMane = Glyphs.localize({
+			'en': 'Run Bubbles Kern',
+		})
+		newMenuItem = NSMenuItem(menuMane, self.runBubblesKern_)
+		Glyphs.menu[EDIT_MENU].append(newMenuItem)
 		self.generalContextMenus = [{
-			'name': Glyphs.localize({
-				'en': 'Do something',
-				}), 
-			'action': self.doSomething_
-			}]
+			'name': menuMane,
+			'action': self.runBubblesKern_
+		}]
+
+	@objc.python_method
+	def conditionalContextMenus(self):
+		contextMenus = []
+		selectedLayers = set(self.controller.selectedLayers)
+
+		if selectedLayers:
+			contextMenus.append({
+				'name': Glyphs.localize({
+					'en': 'Make Bubble Layers',
+				}),
+				'action': self.runMakeBuble_
+			})
+			hasBubbles = False
+			for selectedLayer in selectedLayers:
+				bubbleLayer = selectedLayer.parent.layerForName_masterId_("bubble", selectedLayer.associatedMasterId)
+				if bubbleLayer:
+					hasBubbles = True
+					break
+			if hasBubbles:
+				contextMenus.append({
+					'name': Glyphs.localize({
+						'en': 'Delete Bubble Layers',
+					}),
+					'action': self.runDeleteBubble_
+				})
+		return contextMenus
+
+	def runBubblesKern_(self, sender):
+		from BubbleKern import BubbleKern
+		BubbleKern()
+
+	def runMakeBuble_(self, sender):
+		from MakeBubbleLayers import MakeBubbleLayers
+		selectedLayers = self.controller.selectedLayers
+		font = self.controller.representedObject()
+		# TODO: it take selectedLayers as argument
+		MakeBubbleLayers()
+
+	def runDeleteBubble_(self, sender):
+		from DeleteBubbleLayers import deleteBubbleLayers
+		selectedLayers = self.controller.selectedLayers
+		font = self.controller.representedObject()
+		deleteBubbleLayers(selectedLayers, font)
 
 	@objc.python_method
 	def collectBubbleShapes(self, layer, depth=0):
@@ -81,40 +128,6 @@ class ShowKernBubbles(ReporterPlugin):
 	@objc.python_method
 	def background(self, layer):  # drawing for the main glyph
 		self.drawBubble(layer)
-
-	def doSomething_(self, sender): # unused
-		print('Just did something')
-
-	@objc.python_method
-	def conditionalContextMenus(self):
-
-		# Empty list of context menu items
-		contextMenus = []
-
-		# Execute only if layers are actually selected
-		if Glyphs.font.selectedLayers:
-			layer = Glyphs.font.selectedLayers[0]
-
-			# Exactly one object is selected and it’s an anchor
-			if len(layer.selection) == 1 and isinstance(layer.selection[0], GSAnchor):
-				pass
-				# Add context menu item
-				# contextMenus.append({
-				# 	'name': Glyphs.localize({
-				# 		'en': 'Do something else',
-				# 		'de': 'Tu etwas anderes',
-				# 		'fr': 'Faire aute chose',
-				# 		'es': 'Hacer algo más',
-				# 		'pt': 'Faça outra coisa',
-				# 		}),
-				# 	'action': self.doSomethingElse_
-				# 	})
-
-		# Return list of context menu items
-		return contextMenus
-
-	# def doSomethingElse_(self, sender):
-	# 	print('Just did something else')
 
 	@objc.python_method
 	def __file__(self):
