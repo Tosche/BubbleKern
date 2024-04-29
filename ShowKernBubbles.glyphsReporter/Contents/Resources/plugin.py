@@ -3,10 +3,10 @@
 ###########################################################################################################
 #
 #
-#	Reporter Plugin
+# Reporter Plugin
 #
-#	Read the docs:
-#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
+# Read the docs:
+# https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
 #
 #
 ###########################################################################################################
@@ -14,8 +14,9 @@
 
 from __future__ import division, print_function, unicode_literals
 import objc
-from GlyphsApp import *
-from GlyphsApp.plugins import *
+from AppKit import NSColor, NSMenuItem
+from GlyphsApp import Glyphs, GSLayer, GSAnchor, EDIT_MENU
+from GlyphsApp.plugins import ReporterPlugin
 import traceback
 
 
@@ -93,9 +94,9 @@ class ShowKernBubbles(ReporterPlugin):
 		# Execute only if layers are actually selected
 		if Glyphs.font.selectedLayers:
 			layer = Glyphs.font.selectedLayers[0]
-			
+
 			# Exactly one object is selected and it’s an anchor
-			if len(layer.selection) == 1 and type(layer.selection[0]) == GSAnchor:
+			if len(layer.selection) == 1 and isinstance(layer.selection[0], GSAnchor):
 				pass
 				# Add context menu item
 				# contextMenus.append({
@@ -105,7 +106,7 @@ class ShowKernBubbles(ReporterPlugin):
 				# 		'fr': 'Faire aute chose',
 				# 		'es': 'Hacer algo más',
 				# 		'pt': 'Faça outra coisa',
-				# 		}), 
+				# 		}),
 				# 	'action': self.doSomethingElse_
 				# 	})
 

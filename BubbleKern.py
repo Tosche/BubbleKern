@@ -15,21 +15,16 @@ This version supports pair list as flat text, and also has Pair List Builder lik
 # 	Make Plus and Minus button fancier
 
 import vanilla
-import GlyphsApp
+from GlyphsApp import Glyphs, GSLayer, AskString, Message, GetOpenFile
 import os  # for copying text to clipboard and loading text file
 import re  # for validating flat text
-from robofab.interface.all.dialogs import (
-	AskString,
-	AskYesNoCancel,
-)  # for getting Save As name and Cancel
-from vanilla.dialogs import askYesNo
 from math import ceil  # for rounding up kerning value
 from AppKit import NSDragOperationMove, NSFont, NSMenuItem, NSAffineTransform
 from Foundation import NSMutableDictionary
 # from AppKit import NSFont
 # from AppKit import NSMenuItem
 from dataclasses import dataclass, field
-import platform # for checking Python version
+import platform  # for checking Python version
 import traceback
 
 prevX = 180
@@ -53,7 +48,7 @@ Menlo12 = NSFont.fontWithName_size_("Menlo", 12)
 toolOrderDragType = "toolOrderDragType"
 
 # Load tab0 pairs
-if Glyphs.defaults["com.Tosche.BubbleKern.favDic"] != None:
+if Glyphs.defaults["com.Tosche.BubbleKern.favDic"] is not None:
 	favDic = Glyphs.defaults["com.Tosche.BubbleKern.favDic"]
 	favDic = NSMutableDictionary.alloc().initWithDictionary_copyItems_(favDic, True)
 else:  # Fallback to default favourite dictionary
@@ -82,15 +77,18 @@ else:  # Fallback to default favourite dictionary
 		]
 	}
 
+
 @dataclass()
 class layerAttributes:
 	bubble: GSLayer = None
 	transform: tuple = None
-	children: list[int] = field(default_factory=list) # another layerAttributes?
+	children: list[int] = field(default_factory=list)  # another layerAttributes?
 	depth: int = 0
+
 
 def favNameList(dic):
 	return sorted([i for i, value in iter(dic.items())], key=lambda s: s.lower())
+
 
 class BubbleKern(object):
 	def __init__(self):
@@ -208,7 +206,7 @@ class BubbleKern(object):
 
 	def SavePreferences(self, saveName, deleteBool):
 		try:
-			if deleteBool == False:  # you need to save
+			if not deleteBool:  # you need to save
 				permList = []
 				for i in range(len(self.w.tabs[0].permList)):
 					perm = []
@@ -217,9 +215,9 @@ class BubbleKern(object):
 					perm.append(self.w.tabs[0].permList[i]["Add Flipped"])
 					permList.append(perm)
 				favDic[saveName] = permList
-			elif deleteBool == True:
+			else:
 				del favDic[saveName]
-			# 			favDicToSave = NSMutableDictionary.dictionaryWithDictionary_(favDic)
+			# favDicToSave = NSMutableDictionary.dictionaryWithDictionary_(favDic)
 			Glyphs.defaults["com.Tosche.BubbleKern.favDic"] = favDic
 		except Exception as e:
 			Glyphs.showMacroWindow()
@@ -227,19 +225,14 @@ class BubbleKern(object):
 
 	def favDicToList(self, favName):  # set List view using favDic and name key
 		try:
-			self.w.tabs[0].permList.set(
-				[
-					{
-						" ": "1",
-						"Left": "",
-						"Right": "",
-						"Add Flipped": False,
-						"Pair Count": 0,
-					}
-				]
-			)
+			self.w.tabs[0].permList.set([{
+				" ": "1",
+				"Left": "",
+				"Right": "",
+				"Add Flipped": False,
+				"Pair Count": 0,
+			}])
 			favourites = favDic[favName]  # list of favourites
-			columnItemsToShow = []
 
 			for i in range(len(favourites)):  # fav is a list of columns containing Left, Right, flipped
 				fav = favourites[i]
@@ -283,7 +276,7 @@ class BubbleKern(object):
 			self.favDicToList(favNameList[0])
 
 			# Load tab1 text
-			if Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"] != None:
+			if Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"]:
 				flatPairs = Glyphs.defaults["com.Tosche.BubbleKern.flatPairs"]
 			else:  # Fall Back to Default Text
 				flatPairs = """Welcome!
@@ -330,7 +323,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 					"Pair Count": 0,
 				}
 			]
-			if not "lastIndex" in globals():  # only the case with first access
+			if "lastIndex" not in globals():  # only the case with first access
 				lastIndex = 8
 			if index == 1:  # New Set
 				lastIndex = 1
@@ -365,7 +358,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 					Message('', "Actually, you can't empty the Favourites list.\nSorry for my incompetent coding.")
 				else:
 					if (
-						askYesNo(
+						vanilla.askYesNo(
 							messageText='Are you sure you want to delete "%s"?' % lastName,
 							alertStyle=1,
 						)
@@ -394,7 +387,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 			mixA = selectedDic["Left"].split()
 			mixB = selectedDic["Right"].split()
 			preview = ["%s %s" % (charA, charB) for charA in mixA for charB in mixB]
-			if isFlipped == True:
+			if isFlipped:
 				preview.extend(["%s %s" % (charB, charA) for charA in mixA for charB in mixB])
 			self.w.tabs[0].preview.set("\n".join(preview))
 		except Exception as e:
@@ -416,7 +409,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 
 				# Refresh all pair numbers because clicking the chekbox won't handle its row.
 				isFlipped = self.w.tabs[0].permList[i]["Add Flipped"]
-				if isFlipped == False:
+				if isFlipped:
 					self.w.tabs[0].permList[i]["Pair Count"] = len(A) * len(B)
 				else:
 					self.w.tabs[0].permList[i]["Pair Count"] = len(A) * len(B) * 2
@@ -464,7 +457,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 		if not isProposal:
 			indexes = [int(i) for i in sorted(dropInfo["data"])]
 			indexes.sort()
-			source = dropInfo["source"]
+			# source = dropInfo["source"]
 			rowIndex = dropInfo["rowIndex"]
 
 			items = sender.get()
@@ -559,7 +552,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 			text2 = self.s.group2.get()
 			newText1 = self.cleanUpText(text1)
 			newText2 = self.cleanUpText(text2)
-			if newText1 == False or newText2 == False:
+			if newText1 is False or newText2 is False:
 				Message('', "Invalid input. Only a string of glyph names separated by space, comma, or slash is accepted.")
 			else:
 				i = self.w.tabs[0].permList.getSelection()[0]
@@ -603,7 +596,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 			if "\n\n" in someText:
 				textToSet += "Consecutive blank lines found. "
 				isSafe = False
-			if any(i for i in someList if not re.match("^[\w\d.\-]+\s[\w\d.\-]+$", i)):
+			if any(i for i in someList if not re.match(r"^[\w\d.\-]+\s[\w\d.\-]+$", i)):
 				textToSet += "Invalid line(s) found."
 				isSafe = False
 			if isSafe:
@@ -615,28 +608,27 @@ When you actually kern, there should be no junk lines such as this welcome text.
 		except Exception as e:
 			print("BubbleKern Error (refreshPairNum): %s" % e)
 
-	# 　function that rounds up the given number to nearest 10, used for applying minimal kernValue
+	# function that rounds up the given number to nearest 10, used for applying minimal kernValue
 	# I use this because kern value may be negative.
 	def roundup(self, givenNumber):
 		return int(ceil(givenNumber / 10.0)) * 10
-
 
 	def collectBubbleShapes(self, layer, theTransform=(1.0, 0.0, 0.0, 1.0, 0.0, 0.0), depth=0):
 		# Input layer, transform, and bubble pursuit level.
 		# Returns a layer attributes instance.
 		try:
 			m = Glyphs.font.selectedFontMaster
-			thePath = None
+			# thePath = None
 			children = []
 			theMasterLayer = layer.parent.layers[m.id]
 			if theMasterLayer.components:
 				for c in theMasterLayer.components:
-					children.append(self.collectBubbleShapes(c.componentLayer, c.transform, depth+1))
-			for l in layer.parent.layers:
-				if l.name == 'bubble' and l.master == m: # path
-					thePath = l.completeBezierPath
+					children.append(self.collectBubbleShapes(c.componentLayer, c.transform, depth + 1))
+			for bubbleLayer in layer.parent.layers:
+				if bubbleLayer.name == 'bubble' and bubbleLayer.master == m:  # path
+					# thePath = l.completeBezierPath
 					break
-			currentAttributes = layerAttributes(l, theTransform, children, depth)
+			currentAttributes = layerAttributes(bubbleLayer, theTransform, children, depth)
 			return currentAttributes
 		except:
 			print('collectBubbleShapes error: ', traceback.format_exc())
@@ -645,8 +637,8 @@ When you actually kern, there should be no junk lines such as this welcome text.
 		# receives bubble attributes, li (imaginary layer) to build a bubble, parent attributes.
 		# Adds bubble shape to the li.
 		try:
-			if theAttributes.children: # if there are components
-				for c in theAttributes.children: # c = attribute
+			if theAttributes.children:  # if there are components
+				for c in theAttributes.children:  # c = attribute
 					if theAttributes.transform is not None:
 						inheritedTransforms.append(theAttributes.transform)
 					self.buildBubble(c, li, inheritedTransforms)
@@ -661,7 +653,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 					bubbleCopy.transform(trans)
 				for s in bubbleCopy.shapes:
 					li.shapes.append(s.copy())
-				for i in range(currentDepth-lastDepth):
+				for i in range(currentDepth - lastDepth):
 					if inheritedTransforms:
 						inheritedTransforms.pop(-1)
 				lastDepth = currentDepth
@@ -680,7 +672,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 					mixB = selectedDic["Right"].split()
 					isFlipped = selectedDic["Add Flipped"]
 					pairList.extend(["%s %s" % (charA, charB) for charA in mixA for charB in mixB])
-					if isFlipped == True:
+					if isFlipped:
 						pairList.extend(["%s %s" % (charB, charA) for charA in mixA for charB in mixB])
 				pairText = "\n".join(pairList)
 				if sender == self.w.tabs[0].options:  # If it came from "Copy" popup menu item
@@ -724,14 +716,14 @@ When you actually kern, there should be no junk lines such as this welcome text.
 						bubbleDic[glyph.name]["RB"] = {}
 						highest = int(finalBubbleLayer.bounds.origin.y + finalBubbleLayer.bounds.size.height)
 						lowest = int(round(finalBubbleLayer.bounds.origin.y / unit) * unit - unit)
-						
+
 						for y in range(lowest, highest, unit):
 							intersections = finalBubbleLayer.intersectionsBetweenPoints((-4000, y), (4000, y))
 							# print(intersections)
 							if len(intersections) > 2:
 								bubbleDic[glyph.name]["LB"][y] = round(intersections[1].x)
 								bubbleDic[glyph.name]["RB"][y] = glyph.layers[theMaster.id].width - round(intersections[-2].x)
-			
+
 			# Roundup function was here
 			for pair in pairList:
 				(left, right) = pair.split()
@@ -766,8 +758,9 @@ When you actually kern, there should be no junk lines such as this welcome text.
 			print("BubbleKern Error (BubbleKernMain): %s" % e)
 
 
-BubbleKern()
-try:
-	del lastIndex
-except:
-	pass
+if __name__ == '__main__':
+	BubbleKern()
+	try:
+		del lastIndex
+	except:
+		pass
