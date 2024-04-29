@@ -8,9 +8,8 @@ Create effect for selected glyphs.
 
 import vanilla
 import math
-from GlyphsApp import Glyphs, Message, subtractPaths, GSLayer, GSPath, GSNode, GSPathOperator, GSLINE, GSOFFCURVE
-from AppKit import NSBundle, NSClassFromString, NSMutableArray
-
+from GlyphsApp import Glyphs, Message, subtractPaths, GSLayer, GSPath, GSNode, GSLINE, GSOFFCURVE
+from AppKit import NSBundle, NSClassFromString, NSMutableArray, NSMinX, NSMaxX
 
 class MakeBubbleLayers(object):
 	def __init__(self):
@@ -218,24 +217,23 @@ class MakeBubbleLayers(object):
 					[[-3000 + difBottom, -3000], [0 + difBottom, -3000], [0 + difTop, 3000], [-3000 + difTop, 3000]],
 					[[wi + difBottom, -3000], [wi + 3000 + difBottom, -3000], [wi + 3000 + difTop, 3000], [wi + difTop, 3000]],
 				]
-				Erasers = NSMutableArray.alloc().init()
+				erasers = NSMutableArray.new()
 				for eraser in eraserRectNodes:
 					eraserRect = GSPath()
 					for node in eraser:
-						newNode = GSNode()
-						newNode.type = GSLINE
-						newNode.position = (node[0], node[1])
+						newNode = GSNode(node)
 						eraserRect.nodes.append(newNode)
 					eraserRect.closed = True
-					Erasers.append(eraserRect)
+					erasers.append(eraserRect)
 
 				if Glyphs.versionNumber >= 3.0:
 					subtractedPaths = subtractPaths(list(givenLayer.paths), erasers)
 					givenLayer.shapes = subtractedPaths
 				else:
-					PathOperator = GSPathOperator.alloc().init()
-					Paths = givenLayer.pyobjc_instanceMethods.paths()
-					PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
+					from GlyphsApp import PathOperator
+					PathOperator = PathOperator.new()
+					paths = givenLayer.pyobjc_instanceMethods.paths()
+					PathOperator.subtractPaths_from_error_(erasers, paths, None)
 
 		except Exception as e:
 			Glyphs.showMacroWindow()
