@@ -13,17 +13,17 @@
 	<key>CFBundleName</key>
 	<string>ShowKernBubbles</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.1</string>
+	<string>3.0</string>
 	<key>CFBundleVersion</key>
-	<string>6</string>
+	<string>7</string>
 	<key>UpdateFeedURL</key>
 	<string>https://raw.githubusercontent.com/Tosche/BubbleKern/master/ShowKernBubbles.glyphsReporter/Contents/Info.plist</string>
 	<key>productPageURL</key>
 	<string>https://github.com/Tosche/BubbleKern</string>
 	<key>productReleaseNotes</key>
-	<string>2.0: Complete rewrite.</string>
+	<string>3.0: move the script into the plugin to simplify installation</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright, Toshi Omagari, 2021</string>
+	<string>Copyright, Toshi Omagari, 2024</string>
 	<key>NSPrincipalClass</key>
 	<string>ShowKernBubbles</string>
 </dict>
