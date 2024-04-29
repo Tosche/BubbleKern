@@ -625,7 +625,7 @@ When you actually kern, there should be no junk lines such as this welcome text.
 				for c in theMasterLayer.components:
 					children.append(self.collectBubbleShapes(c.componentLayer, c.transform, depth + 1))
 			for bubbleLayer in layer.parent.layers:
-				if bubbleLayer.name == 'bubble' and bubbleLayer.master == m:  # path
+				if bubbleLayer.name == 'bubble' and bubbleLayer.associatedMasterId == m.id:  # path
 					# thePath = l.completeBezierPath
 					break
 			currentAttributes = layerAttributes(bubbleLayer, theTransform, children, depth)

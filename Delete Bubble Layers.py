@@ -22,7 +22,7 @@ for layer in selectedLayers:
 	bubbleLayerList = [bubbleLayer for bubbleLayer in glyph.layers if bubbleLayer.name == "bubble"]
 	print(bubbleLayerList)
 	for bubble in bubbleLayerList:
-		if bubble.associatedFontMaster() == fontMaster:
+		if bubble.associatedMasterId == fontMaster.id:
 			print("delete")
 			if Glyphs.versionNumber >= 3:
 				glyph.removeLayerForId_(bubble.layerId)
