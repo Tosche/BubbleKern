@@ -168,8 +168,9 @@ class MakeBubbleLayers(object):
 	def fitToSidebearing(self, givenLayer, givenMaster):
 		try:
 			nudgeExcess = True if self.w.excessRadio.get() == 0 else False
-			boundL = givenLayer.bounds.origin.x
-			boundR = boundL + givenLayer.bounds.size.width
+			bounds = givenLayer.fastBounds()
+			boundL = NSMinX(bounds)
+			boundR = NSMaxX(bounds)
 			for thisPath in givenLayer.paths:  # nudge-out the inside extremes
 				for node in thisPath.nodes:
 					interesting = False
