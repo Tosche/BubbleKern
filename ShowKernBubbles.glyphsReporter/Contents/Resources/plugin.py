@@ -94,7 +94,7 @@ class ShowKernBubbles(ReporterPlugin):
 				return None
 
 			bubbleLayer = layer.parent.layerForName_masterId_('bubble', layer.associatedMasterId)
-			if bubbleLayer is None:
+			if bubbleLayer is None or bubbleLayer.bezierPath is None:
 				return None
 			bubblePath = bubbleLayer.bezierPath.copy()
 
