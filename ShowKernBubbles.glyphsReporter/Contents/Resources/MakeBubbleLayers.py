@@ -7,9 +7,9 @@ Create effect for selected glyphs.
 """
 
 import vanilla
-import GlyphsApp
 import math
-from AppKit import NSBundle
+from GlyphsApp import Glyphs, Message, subtractPaths, GSLayer, GSPath, GSNode, GSLINE, GSOFFCURVE
+from AppKit import NSBundle, NSClassFromString, NSMutableArray, NSMinX, NSMaxX
 
 class MakeBubbleLayers(object):
 	def __init__(self):
@@ -19,12 +19,12 @@ class MakeBubbleLayers(object):
 		txY = 17
 		spX = 14
 		spY = 12
-		btnX = 60
-		btnY = 20
+		# btnX = 60
+		# btnY = 20
 		windowWidth = 260
 		windowHeight = 360
-		windowWidthResize = 100  # user can resize width by this value
-		windowHeightResize = 0  # user can resize height by this value
+		# windowWidthResize = 100  # user can resize width by this value
+		# windowHeightResize = 0  # user can resize height by this value
 		self.w = vanilla.FloatingWindow(
 			(windowWidth, windowHeight),  # default window size
 			"Make Bubble Layers",  # window title
@@ -167,12 +167,13 @@ class MakeBubbleLayers(object):
 	def fitToSidebearing(self, givenLayer, givenMaster):
 		try:
 			nudgeExcess = True if self.w.excessRadio.get() == 0 else False
-			boundL = givenLayer.bounds.origin.x
-			boundR = boundL + givenLayer.bounds.size.width
-			for thisPath in givenLayer.paths: # nudge-out the inside extremes
+			bounds = givenLayer.fastBounds()
+			boundL = NSMinX(bounds)
+			boundR = NSMaxX(bounds)
+			for thisPath in givenLayer.paths:  # nudge-out the inside extremes
 				for node in thisPath.nodes:
 					interesting = False
-					if node.type != GSOFFCURVE: # if on-curve
+					if node.type != GSOFFCURVE:  # if on-curve
 						if node.x < 0 and nudgeExcess:
 							interesting = True
 							offsetX = -node.x
@@ -203,7 +204,7 @@ class MakeBubbleLayers(object):
 									oncurveSt = offcurve2.nextNode
 									self.nudgeCurve(oncurveMv, offcurve1, offcurve2, oncurveSt, offsetX)  # only moves offcurve
 							node.x += offsetX  # on curve node moves here
-			if nudgeExcess == False:  # if Trim Option is on
+			if not nudgeExcess:  # if Trim Option is on
 				wi = givenLayer.width
 				slant = givenMaster.italicAngle
 				slantOrigin = givenMaster.xHeight / 2
@@ -216,26 +217,23 @@ class MakeBubbleLayers(object):
 					[[-3000 + difBottom, -3000], [0 + difBottom, -3000], [0 + difTop, 3000], [-3000 + difTop, 3000]],
 					[[wi + difBottom, -3000], [wi + 3000 + difBottom, -3000], [wi + 3000 + difTop, 3000], [wi + difTop, 3000]],
 				]
-				Erasers = NSMutableArray.alloc().init()
+				erasers = NSMutableArray.new()
 				for eraser in eraserRectNodes:
 					eraserRect = GSPath()
 					for node in eraser:
-						newNode = GSNode()
-						newNode.type = GSLINE
-						newNode.position = (node[0], node[1])
+						newNode = GSNode(node)
 						eraserRect.nodes.append(newNode)
 					eraserRect.closed = True
-					Erasers.append(eraserRect)
+					erasers.append(eraserRect)
 
 				if Glyphs.versionNumber >= 3.0:
-					subtractedPaths = subtractPaths([p for p in givenLayer.paths], Erasers)
-					givenLayer.clear()
-					for p in subtractedPaths:
-						givenLayer.paths.append(p)
+					subtractedPaths = subtractPaths(list(givenLayer.paths), erasers)
+					givenLayer.shapes = subtractedPaths
 				else:
-					PathOperator = GSPathOperator.alloc().init()
-					Paths = givenLayer.pyobjc_instanceMethods.paths()
-					PathOperator.subtractPaths_from_error_(Erasers, Paths, None)
+					from GlyphsApp import PathOperator
+					PathOperator = PathOperator.new()
+					paths = givenLayer.pyobjc_instanceMethods.paths()
+					PathOperator.subtractPaths_from_error_(erasers, paths, None)
 
 		except Exception as e:
 			Glyphs.showMacroWindow()
@@ -255,7 +253,7 @@ class MakeBubbleLayers(object):
 				offsetH = int(self.w.editH.get())
 				offsetV = int(self.w.editV.get())
 			except:
-				Glyphs.displayDialog_withTitle_("You typed something other than numbers in the text field.", "Invalid Input")
+				Message("You typed something other than numbers in the text field.", "Invalid Input")
 
 			if self.w.masterRadio.get() == 0:
 				masters = [font.selectedFontMaster]
@@ -264,7 +262,7 @@ class MakeBubbleLayers(object):
 			layersCount = float(len(selectedLayers))
 			counter = 0.0
 			for gLayer in selectedLayers:
-				if gLayer.name != None:  # if it's not a line break
+				if gLayer.name:  # if it's not a line break
 					glyph = gLayer.parent
 					glyph.beginUndo()  # begin undo grouping
 					if self.w.overwriteRadio.get() == 0:  # never overwrite
@@ -278,9 +276,9 @@ class MakeBubbleLayers(object):
 						bubblesToBeDeleted = [layer for layer in glyph.layers if layer.name == "bubble" and layer.associatedFontMaster() in masters]
 					if "bubblesToBeDeleted" in locals():
 						for emptyBubble in bubblesToBeDeleted:
-							del(glyph.layers[emptyBubble.layerId])
+							del glyph.layers[emptyBubble.layerId]
 					for master in masters:
-						if not master in bubbleList:  # if master is not mentioned in bubbleList = doesn't have bubble
+						if master not in bubbleList:  # if master is not mentioned in bubbleList = doesn't have bubble
 							newBubbleLayer = GSLayer()
 							newBubbleLayer.name = "bubble"
 							newBubbleLayer.width = glyph.layers[master.id].width
@@ -289,7 +287,7 @@ class MakeBubbleLayers(object):
 							# This section removes components and then flattens corner components etc.
 							#
 							parentLayer = glyph.layers[master.id]
-							li = parentLayer.copy() # leaves smart stuff behind.
+							li = parentLayer.copy()  # leaves smart stuff behind.
 							li.parent = parentLayer.parent
 							for i in range(len(li.components)):
 								li.removeShape_(li.components[0])
