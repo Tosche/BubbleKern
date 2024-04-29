@@ -230,10 +230,8 @@ class MakeBubbleLayers(object):
 					Erasers.append(eraserRect)
 
 				if Glyphs.versionNumber >= 3.0:
-					subtractedPaths = subtractPaths([p for p in givenLayer.paths], Erasers)
-					givenLayer.clear()
-					for p in subtractedPaths:
-						givenLayer.paths.append(p)
+					subtractedPaths = subtractPaths(list(givenLayer.paths), erasers)
+					givenLayer.shapes = subtractedPaths
 				else:
 					PathOperator = GSPathOperator.alloc().init()
 					Paths = givenLayer.pyobjc_instanceMethods.paths()
