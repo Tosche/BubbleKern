@@ -30,7 +30,11 @@ class ShowKernBubbles(ReporterPlugin):
 		menuMane = Glyphs.localize({
 			'en': 'Run Bubbles Kern',
 		})
-		newMenuItem = NSMenuItem(menuMane, self.runBubblesKern_)
+		if Glyphs.buildNumber >= 3320:
+			from GlyphsApp.UI import MenuItem
+			newMenuItem = MenuItem(menuMane, action=self.runBubblesKern_, target=self)
+		else:
+			newMenuItem = NSMenuItem(menuMane, self.runBubblesKern_)
 		Glyphs.menu[EDIT_MENU].append(newMenuItem)
 		self.generalContextMenus = [{
 			'name': menuMane,
