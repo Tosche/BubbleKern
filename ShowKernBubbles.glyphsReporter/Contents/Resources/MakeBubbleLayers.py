@@ -8,7 +8,7 @@ Create effect for selected glyphs.
 
 import vanilla
 import math
-from GlyphsApp import Glyphs, Message, subtractPaths, GSLayer, GSPath, GSNode, GSLINE, GSOFFCURVE
+from GlyphsApp import Glyphs, Message, subtractPaths, GSLayer, GSPath, GSNode, GSControlLayer, GSOFFCURVE
 from AppKit import NSBundle, NSClassFromString, NSMutableArray, NSMinX, NSMaxX
 
 class MakeBubbleLayers(object):
@@ -246,7 +246,7 @@ class MakeBubbleLayers(object):
 			roundRadius = int(self.w.editRound.get())
 			adhereToSB = self.w.adhereToSB.get()
 			font = Glyphs.font  # frontmost font
-			fontMaster = font.selectedFontMaster  # active master
+			# fontMaster = font.selectedFontMaster  # active master
 			selectedLayers = font.selectedLayers  # active layers of selected glyphs
 			font.disableUpdateInterface()  # suppresses UI updates in Font View
 			try:
@@ -259,63 +259,63 @@ class MakeBubbleLayers(object):
 				masters = [font.selectedFontMaster]
 			else:
 				masters = font.masters
-			layersCount = float(len(selectedLayers))
 			counter = 0.0
 			for gLayer in selectedLayers:
-				if gLayer.name:  # if it's not a line break
-					glyph = gLayer.parent
-					glyph.beginUndo()  # begin undo grouping
-					if self.w.overwriteRadio.get() == 0:  # never overwrite
-						# bubbleList is a list of masters that have bubble layer
-						bubbleList = [layer.associatedFontMaster() for layer in glyph.layers if layer.name == "bubble"]
-					elif self.w.overwriteRadio.get() == 1:  # make new only if empty
-						bubbleList = [layer.associatedFontMaster() for layer in glyph.layers if layer.name == "bubble" and len(layer.paths) > 0]
-						bubblesToBeDeleted = [layer for layer in glyph.layers if layer.name == "bubble" and len(layer.paths) == 0]
-					else:  # Always delete and make new
-						bubbleList = []
-						bubblesToBeDeleted = [layer for layer in glyph.layers if layer.name == "bubble" and layer.associatedFontMaster() in masters]
-					if "bubblesToBeDeleted" in locals():
-						for emptyBubble in bubblesToBeDeleted:
-							del glyph.layers[emptyBubble.layerId]
-					for master in masters:
-						if master not in bubbleList:  # if master is not mentioned in bubbleList = doesn't have bubble
-							newBubbleLayer = GSLayer()
-							newBubbleLayer.name = "bubble"
-							newBubbleLayer.width = glyph.layers[master.id].width
-							newBubbleLayer.associatedMasterId = master.id
+				if isinstance(gLayer, GSControlLayer):  # if it's not a line break
+					continue
+				glyph = gLayer.parent
+				glyph.beginUndo()  # begin undo grouping
+				if self.w.overwriteRadio.get() == 0:  # never overwrite
+					# bubbleList is a list of masters that have bubble layer
+					bubbleList = [layer.associatedFontMaster() for layer in glyph.layers if layer.name == "bubble"]
+				elif self.w.overwriteRadio.get() == 1:  # make new only if empty
+					bubbleList = [layer.associatedFontMaster() for layer in glyph.layers if layer.name == "bubble" and len(layer.paths) > 0]
+					bubblesToBeDeleted = [layer for layer in glyph.layers if layer.name == "bubble" and len(layer.paths) == 0]
+				else:  # Always delete and make new
+					bubbleList = []
+					bubblesToBeDeleted = [layer for layer in glyph.layers if layer.name == "bubble" and layer.associatedFontMaster() in masters]
+				if "bubblesToBeDeleted" in locals():
+					for emptyBubble in bubblesToBeDeleted:
+						del glyph.layers[emptyBubble.layerId]
+				for master in masters:
+					if master not in bubbleList:  # if master is not mentioned in bubbleList = doesn't have bubble
+						newBubbleLayer = GSLayer()
+						newBubbleLayer.name = "bubble"
+						newBubbleLayer.width = glyph.layers[master.id].width
+						newBubbleLayer.associatedMasterId = master.id
 
-							# This section removes components and then flattens corner components etc.
-							#
-							parentLayer = glyph.layers[master.id]
-							li = parentLayer.copy()  # leaves smart stuff behind.
-							li.parent = parentLayer.parent
-							for i in range(len(li.components)):
-								li.removeShape_(li.components[0])
-							# li2 = li.copyDecomposedLayer() # also decomposes components.
-							li.decomposeSmartOutlines()
-							for pathToCopy in li.paths:
-								newBubbleLayer.paths.append(pathToCopy.copy())
-							newBubbleLayer.decomposeSmartOutlines()
-							self.offsetPath(newBubbleLayer, offsetH, offsetV)  # SHOULD NOT BE EXECUTED IF SIDEBEARING OPTION IS OFF
-							newBubbleLayer.removeOverlap()
-							for path in newBubbleLayer.paths:  # remove negative path because you don't need it
-								if path.direction == 1:
-									path.reverse()
-							newBubbleLayer.removeOverlap()  # remove overlap again to eliminate all negative path
-							if adhereToSB:
-								self.fitToSidebearing(newBubbleLayer, master)
-							if roundRadius != 0:
-								roundFilter = NSClassFromString("GlyphsFilterRoundCorner")
-								roundFilter.roundLayer_radius_checkSelection_visualCorrect_grid_(newBubbleLayer, roundRadius, False, True, False)
+						# This section removes components and then flattens corner components etc.
+						#
+						parentLayer = glyph.layers[master.id]
+						li = parentLayer.copy()  # leaves smart stuff behind.
+						li.parent = parentLayer.parent
+						for i in range(len(li.components)):
+							li.removeShape_(li.components[0])
+						# li2 = li.copyDecomposedLayer() # also decomposes components.
+						li.decomposeSmartOutlines()
+						for pathToCopy in li.paths:
+							newBubbleLayer.paths.append(pathToCopy.copy())
+						newBubbleLayer.decomposeSmartOutlines()
+						self.offsetPath(newBubbleLayer, offsetH, offsetV)  # SHOULD NOT BE EXECUTED IF SIDEBEARING OPTION IS OFF
+						newBubbleLayer.removeOverlap()
+						for path in newBubbleLayer.paths:  # remove negative path because you don't need it
+							if path.direction == 1:
+								path.reverse()
+						newBubbleLayer.removeOverlap()  # remove overlap again to eliminate all negative path
+						if adhereToSB:
+							self.fitToSidebearing(newBubbleLayer, master)
+						if roundRadius != 0:
+							roundFilter = NSClassFromString("GlyphsFilterRoundCorner")
+							roundFilter.roundLayer_radius_checkSelection_visualCorrect_grid_(newBubbleLayer, roundRadius, False, True, False)
 
-							glyph.layers.append(newBubbleLayer)
-							for p in newBubbleLayer.paths:  # rounding all coordinates
-								for n in p.nodes:
-									n.x = int(round(n.x))
-									n.y = int(round(n.y))
-					glyph.endUndo()  # end undo grouping
-					counter += 1.0
-					# self.progress.text.set("Please wait...%s%%" % int((counter / layersCount) * 100))
+						glyph.layers.append(newBubbleLayer)
+						for p in newBubbleLayer.paths:  # rounding all coordinates
+							for n in p.nodes:
+								n.x = int(round(n.x))
+								n.y = int(round(n.y))
+				glyph.endUndo()  # end undo grouping
+				counter += 1.0
+				# self.progress.text.set("Please wait...%s%%" % int((counter / layersCount) * 100))
 			# self.progress.hide()
 			font.enableUpdateInterface()  # re-enables UI updates in Font View
 
