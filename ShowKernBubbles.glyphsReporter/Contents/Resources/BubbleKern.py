@@ -15,6 +15,7 @@ This version supports pair list as flat text, and also has Pair List Builder lik
 # 	Make Plus and Minus button fancier
 
 import vanilla
+from typing import Optional
 from GlyphsApp import Glyphs, GSLayer, AskString, Message, GetOpenFile
 import os  # for copying text to clipboard and loading text file
 import re  # for validating flat text
@@ -81,7 +82,7 @@ else:  # Fallback to default favourite dictionary
 @dataclass()
 class layerAttributes:
 	bubble: GSLayer = None
-	transform: tuple = None
+	transform: Optional[tuple] = None
 	children: list[int] = field(default_factory=list)  # another layerAttributes?
 	depth: int = 0
 
