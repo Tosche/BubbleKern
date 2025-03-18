@@ -74,9 +74,6 @@ class ShowKernBubbles(ReporterPlugin):
 
 	def runMakeBuble_(self, sender):
 		from MakeBubbleLayers import MakeBubbleLayers
-		selectedLayers = self.controller.selectedLayers
-		font = self.controller.representedObject()
-		# TODO: it take selectedLayers as argument
 		MakeBubbleLayers()
 
 	def runDeleteBubble_(self, sender):
